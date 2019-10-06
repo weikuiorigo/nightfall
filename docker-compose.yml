@@ -9,9 +9,9 @@ services:
     depends_on:
       - ganache
     volumes:
-      - ./accounts/src:/app/src
-      - ./accounts/config:/app/config
-      - ./accounts/.babelrc:/app/.babelrc
+      - ./accounts/src:/app/src:cached,ro
+      - ./accounts/config:/app/config:cached,ro
+      - ./accounts/.babelrc:/app/.babelrc:cached,ro
     environment:
       BLOCKCHAIN_HOST: http://ganache
       BLOCKCHAIN_PORT: 8545
@@ -22,9 +22,9 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     volumes:
-      - ./api-gateway/src:/app/src
-      - ./api-gateway/config:/app/config
-      - ./api-gateway/.babelrc:/app/.babelrc
+      - ./api-gateway/src:/app/src:cached,ro
+      - ./api-gateway/config:/app/config:cached,ro
+      - ./api-gateway/.babelrc:/app/.babelrc:cached,ro
     ports:
       - "8001:80"
     environment:
@@ -45,13 +45,13 @@ services:
     depends_on:
       - ganache
     volumes:
-      - ./offchain/src:/app/src
-      - ./offchain/build:/app/build
-      - ./offchain/.babelrc:/app/.babelrc
-      - ./offchain/__tests__:/app/__tests__
-      - ./zkp-utils:/app/node_modules/zkp-utils
-      - ./account-utils:/app/src/account-utils
-      - ./offchain/config:/app/config
+      - ./offchain/src:/app/src:cached,ro
+      - ./offchain/build:/app/build:cached # Writeable for nodemon build
+      - ./offchain/.babelrc:/app/.babelrc:cached,ro
+      - ./offchain/__tests__:/app/__tests__:cached,ro
+      - ./zkp-utils:/app/node_modules/zkp-utils:ro
+      - ./account-utils:/app/src/account-utils:ro
+      - ./offchain/config:/app/config:cached,ro
     environment:
       AUTHENTICATION_API_HOST: http://api-gateway
       AUTHENTICATION_API_PORT: 80
@@ -66,15 +66,15 @@ services:
     depends_on:
       - ganache
     volumes:
-      - ./zkp/src:/app/src
-      - ./zkp/build:/app/build
-      - ./zkp/code:/app/code
-      - ./zkp/.babelrc:/app/.babelrc
-      - ./zkp-utils:/app/node_modules/zkp-utils
-      - ./account-utils:/app/src/account-utils
-      - ./zkp/__tests__:/app/__tests__
-      - ./zkp/config:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./zkp/src:/app/src:cached,ro
+      - ./zkp/build:/app/build:delegated # Writeable for nodemon build
+      - ./zkp/code:/app/code:cached # Writeable for ZoKrates build artifacts
+      - ./zkp/.babelrc:/app/.babelrc:cached,ro
+      - ./zkp-utils:/app/node_modules/zkp-utils:ro
+      - ./account-utils:/app/src/account-utils:ro
+      - ./zkp/__tests__:/app/__tests__:cached,ro
+      - ./zkp/config:/app/config:cached,ro
+      - /var/run/docker.sock:/var/run/docker.sock # Writeable for Docker control communication
     environment:
       BLOCKCHAIN_HOST: http://ganache
       BLOCKCHAIN_PORT: 8545
@@ -86,9 +86,9 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     volumes:
-      - ./ui/src:/app/src
-      - ./ui/angular.json:/app/angular.json
-      - ./ui/tsconfig.json:/app/tsconfig.json
+      - ./ui/src:/app/src:cached,ro
+      - ./ui/angular.json:/app/angular.json:cached,ro
+      - ./ui/tsconfig.json:/app/tsconfig.json:cached,ro
     ports:
       - "8000:80"
 
@@ -106,11 +106,11 @@ services:
     depends_on:
       - mongo
     volumes:
-      - ./database/src:/app/src
-      - ./database/.babelrc:/app/.babelrc
-      - ./zkp-utils:/app/node_modules/zkp-utils
-      - ./database/config:/app/config
-      - ./database/setup-mongo-acl-for-new-users.js:/app/setup-mongo-acl-for-new-users.js
+      - ./database/src:/app/src:cached,ro
+      - ./database/.babelrc:/app/.babelrc:cached,ro
+      - ./zkp-utils:/app/node_modules/zkp-utils:ro
+      - ./database/config:/app/config:cached,ro
+      - ./database/setup-mongo-acl-for-new-users.js:/app/setup-mongo-acl-for-new-users.js:cached,ro
 
   mongo:
     image: mongo
@@ -119,8 +119,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=admin
       - MONGO_INITDB_DATABASE=nightfall
     volumes:
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - mongo-volume:/data/db
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d,ro
+      - mongo-volume:/data/db # Writeable for database state
 
   truffle-offchain:
     image: ajmay/truffle:5.0.9
@@ -130,10 +130,10 @@ services:
       ETH_GAS: 6000000
       ETH_GAS_PRICE: 20000000000
     volumes:
-      - ./offchain/contracts:/truffle/contracts:delegated
-      - ./offchain/migrations/:/truffle/migrations:delegated
-      - ./offchain/build/contracts/:/truffle/build/contracts:cached
-      - ./offchain/test/:/truffle/test:delegated
+      - ./offchain/contracts:/truffle/contracts:cached,ro
+      - ./offchain/migrations/:/truffle/migrations:cached,ro
+      - ./offchain/build/contracts/:/truffle/build/contracts:delegated # Writeable for Truffle compile
+      - ./offchain/test/:/truffle/test:cached,ro
     depends_on:
       - ganache
     logging:
@@ -148,11 +148,11 @@ services:
       ETH_GAS: 6000000
       ETH_GAS_PRICE: 20000000000
     volumes:
-      - ./zkp/contracts/:/truffle/contracts:delegated
-      - ./zkp/migrations/:/truffle/migrations:delegated
-      - ./zkp/build/contracts/:/truffle/build/contracts:cached
-      - ./zkp/test/:/truffle/test:delegated
-      - ./zkp/src/:/truffle/src:delegated
+      - ./zkp/contracts/:/truffle/contracts:cached,ro
+      - ./zkp/migrations/:/truffle/migrations:cached,ro
+      - ./zkp/build/contracts/:/truffle/build/contracts:delegated # Writeable for Truffle compile
+      - ./zkp/test/:/truffle/test:cached,ro
+      - ./zkp/src/:/truffle/src:cached,ro
     depends_on:
       - ganache
     logging:
