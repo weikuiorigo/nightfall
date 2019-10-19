@@ -37,6 +37,7 @@ popd
 printf "${GREEN}*** Launching containerized ganache ***${NC}\n"
 docker-compose up -d ganache
 
+# This can be commented out not to redeploy
 printf "${GREEN}*** Deploying all contracts ***${NC}\n"
 make truffle-migrate
 
