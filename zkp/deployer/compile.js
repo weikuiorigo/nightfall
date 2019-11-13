@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const solc = require('solc');
 
-const builPath = path.resolve('../', 'build');
+const builPath = path.resolve('../', 'build/contracts');
 const contractsFolderPath = path.resolve('../', 'contracts');
 
 const createBuildFolder = () => {
@@ -21,8 +21,9 @@ const buildSources = () => {
 			content: fs.readFileSync(contractFullPath, 'utf8')
 		};
 	});
-
+	
 	return sources;
+	
 }
 
 const input = {
@@ -40,8 +41,16 @@ const input = {
 const compileContracts = () => {
 	const compiledContracts = JSON.parse(solc.compile(JSON.stringify(input))).contracts;
 
+	console.log(input.settings.outputSelection);
+
 	for (let contract in compiledContracts) {
+		
+		
+		
 		for(let contractName in compiledContracts[contract]) {
+
+			console.log(contractName);
+
 			fs.outputJsonSync(
 				path.resolve(builPath, `${contractName}.json`),
 				compiledContracts[contract][contractName],
