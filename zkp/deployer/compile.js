@@ -53,12 +53,12 @@ const compileContracts = () => {
 	}
 }
 
-(function run () {
+
+
+module.exports = (function run () {
 	createBuildFolder();
 	compileContracts();
 })();
-
-
 
 //Q1.1: “deployBackendContracts()” - deploys the VerifierRegistry, BN256G2, and GM17_v0 contracts
 
