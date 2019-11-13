@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs-extra');
 const solc = require('solc');
 
-const builPath = path.resolve('zkp', 'build');
-const contractsFolderPath = path.resolve('zkp', 'contracts');
+const builPath = path.resolve('../', 'build');
+const contractsFolderPath = path.resolve('../', 'contracts');
 
 const createBuildFolder = () => {
 	fs.emptyDirSync(builPath);
@@ -54,10 +54,10 @@ const compileContracts = () => {
 }
 
 
-
-module.exports = (function run () {
+(function run () {
 	createBuildFolder();
 	compileContracts();
+	console.log("Test - Test")
 })();
 
 //Q1.1: “deployBackendContracts()” - deploys the VerifierRegistry, BN256G2, and GM17_v0 contracts
