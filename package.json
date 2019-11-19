@@ -25,7 +25,9 @@
   "homepage": "https://github.com/EYBlockchain/nightfall#readme",
   "dependencies": {
     "lodash": "^4.17.15",
-    "typescript": "^2.9.2"
+    "solc": "^0.5.13",
+    "typescript": "^2.9.2",
+    "web3": "^1.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",

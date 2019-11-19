@@ -22,6 +22,7 @@ const buildSources = () => {
 		};
 	});
 	
+	console.log(sources);
 	return sources;
 	
 }

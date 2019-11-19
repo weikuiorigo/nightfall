@@ -1,6 +1,8 @@
 const Verifier_Registry = artifacts.require('Verifier_Registry.sol');
 
 const BN256G2 = artifacts.require('BN256G2');
+//Eliptic curve operations
+
 const GM17_v0 = artifacts.require('GM17_v0.sol');
 
 const FToken = artifacts.require('FToken.sol');
