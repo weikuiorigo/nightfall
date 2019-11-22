@@ -89,8 +89,9 @@ async function filingChecks(codeDirectory) {
     // Looking for a .code file, but not out.code
     if (files[j].endsWith('.code') && files[j] !== 'out.code') {
       codeFile = files[j];
+    } else {
+      return 1;
     }
-    else return 1;
   }
 
   await checkForImportFiles(`${codeDirectory}`, codeFile);
