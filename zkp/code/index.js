@@ -89,7 +89,7 @@ async function filingChecks(codeDirectory) {
     // Looking for a .code file, but not out.code
     if (files[j].endsWith('.code') && files[j] !== 'out.code') {
       codeFile = files[j];
-    } 
+    }
     else return 1;
   }
 
@@ -182,7 +182,8 @@ async function runSetup(codeDirectory, suppress) {
   if (dirtyDir) {
     console.log('Existing trusted setup is already installed.');
     console.log('These are files other than *.code at: ', codeDirectory);
-    console.log('Nightfall will not overwrite existing trusted setup file. You must manually delete them if you wish to regerenate.');
+    console.log('Nightfall will not overwrite existing trusted setup file.');
+    console.log('You must manually delete them if you wish to regerenate.');
     console.error('\nSetup aborted due to existing trusted setup.');
     return;
   }
@@ -212,7 +213,8 @@ async function runSetupAll(codeDirectory, suppress) {
   if (dirtyDirs.length) {
     console.log('Existing trusted setup is already installed.');
     console.log('These are files other than *.code at: ', dirtyDirs);
-    console.log('Nightfall will not overwrite existing trusted setup files. You must manually delete them if you wish to regerenate.');
+    console.log('Nightfall will not overwrite existing trusted setup file.');
+    console.log('You must manually delete them if you wish to regerenate.');
     console.error('\nSetup aborted due to existing trusted setup.');
     return;
   }
