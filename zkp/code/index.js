@@ -75,37 +75,26 @@ async function checkForImportFiles(codeFileDirectory, codeFile) {
 }
 
 /**
- * Copies files over to /code/safe-dump, and then checks to ensure imports are present.
+ * Checks if this directory contains files other than .code file
  * @param {string} codeDirectory - Directory that contains the .code file (e.g., '/code/gm17/ft-burn')
+ * @returns {Number} - 1: dirty directory, 0: clean directory
  */
 async function filingChecks(codeDirectory) {
   const files = await readdirAsync(codeDirectory);
 
   // Looking for the .code file, e.g., ft-burn.out
-  let codeFileName;
-  let codeFileExt;
+  let codeFile;
   for (let j = 0; j < files.length; j += 1) {
-    codeFileName = files[j].substring(0, files[j].lastIndexOf('.'));
-    codeFileExt = files[j].substring(files[j].lastIndexOf('.') + 1, files[j].length);
-
     // Output directory
     // Looking for a .code file, but not out.code
-    if (codeFileExt === 'code' && codeFileName !== 'out') {
-      break;
-    }
+    if (files[j].endsWith('.code') && files[j] !== 'out.code') {
+      codeFile = files[j];
+    } 
+    else return 1;
   }
 
-  // Copies files over to /code/safe-dump
-  const safeDumpDirectory = path.join(codeDirectory, '../../safe-dump');
-  fs.copyFileSync(
-    `${codeDirectory}/${codeFileName}.${codeFileExt}`,
-    `${safeDumpDirectory}/${codeFileName}.${codeFileExt}`,
-    err => {
-      if (err) throw new Error('Error while copying file:', err);
-    },
-  );
-
-  await checkForImportFiles(`${codeDirectory}`, `${codeFileName}.${codeFileExt}`);
+  await checkForImportFiles(`${codeDirectory}`, codeFile);
+  return 0;
 }
 
 /**
@@ -187,7 +176,16 @@ async function generateZokratesFiles(directoryPath, suppress) {
  * @param {Boolean} suppress - Flag to suppress console logs.
  */
 async function runSetup(codeDirectory, suppress) {
-  await filingChecks(codeDirectory);
+  const dirtyDir = await filingChecks(codeDirectory);
+
+  // abort if existing files are present
+  if (dirtyDir) {
+    console.log('Existing trusted setup is already installed.');
+    console.log('These are files other than *.code at: ', codeDirectory);
+    console.log('Nightfall will not overwrite existing trusted setup file. You must manually delete them if you wish to regerenate.');
+    console.error('\nSetup aborted due to existing trusted setup.');
+    return;
+  }
 
   await generateZokratesFiles(codeDirectory, suppress);
 }
@@ -201,11 +199,23 @@ async function runSetupAll(codeDirectory, suppress) {
   // Array of all directories in the above directory.
   const codeDirectories = getDirectories(codeDirectory);
 
-  await Promise.all(
+  const checkResults = await Promise.all(
     codeDirectories.map(subdirectory => {
       return filingChecks(subdirectory);
     }),
   );
+
+  const dirtyDirs = [];
+  checkResults.forEach((res, index) => res && dirtyDirs.push(codeDirectories[index]));
+
+  // abort if existing files are present
+  if (dirtyDirs.length) {
+    console.log('Existing trusted setup is already installed.');
+    console.log('These are files other than *.code at: ', dirtyDirs);
+    console.log('Nightfall will not overwrite existing trusted setup files. You must manually delete them if you wish to regerenate.');
+    console.error('\nSetup aborted due to existing trusted setup.');
+    return;
+  }
 
   // The files don't compile correctly when we Promise.all these, so we're doing sequentially.
   // Maybe too much processing.
