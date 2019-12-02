@@ -9,7 +9,6 @@ import util from 'util';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
-import inquirer from 'inquirer';
 // eslint-disable-next-line import/extensions
 import { compile, setup, exportVerifier } from '@eyblockchain/zokrates.js';
 import keyExtractor from './keyExtractor';
@@ -229,16 +228,6 @@ async function main() {
       "The '-i' option has not been specified.\nThat's OK, we can go ahead and loop through every .code file.\nHOWEVER, if you wanted to choose just one file, cancel this process, and instead use option -i (see the README-trusted-setup)",
     );
     console.log('Be warned, this could take up to an hour!');
-
-    const carryOn = await inquirer.prompt([
-      {
-        type: 'yesno',
-        name: 'continue',
-        message: 'Continue?',
-        choices: ['y', 'n'],
-      },
-    ]);
-    if (carryOn.continue !== 'y') return;
 
     try {
       await runSetupAll(`${process.cwd()}/code/gm17`, suppress); // we'll do all .code files if no option is specified
