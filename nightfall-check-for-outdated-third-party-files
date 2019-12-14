@@ -1,0 +1,139 @@
+#!/bin/bash
+set -e
+
+GREEN='\033[0;32m'
+Yellow="\033[0;33m" 
+RED='\033[0;31m'
+NC='\033[0m'
+
+# array contractsUrls and contracts values must be mapped by index
+contractsUrls=(
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/utils/address-utils.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/utils/erc165.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc20/master/contracts/tokens/ERC20.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/erc721.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/erc721-metadata.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/erc721-token-receiver.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/ownership/ownable.sol'
+  'https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/9aa30e19605e686d324448645c6594d2d31464c6/contracts/math/SafeMath.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/utils/supports-interface.sol'
+)
+contracts=(
+  'AddressUtils.sol'
+  'ERC165.sol'
+  'ERC20Interface.sol'
+  'ERC721Interface.sol'
+  'ERC721Metadata.sol'
+  'ERC721TokenReceiver.sol'
+  'Ownable.sol'
+  'SafeMath.sol'
+  'SupportsInterface.sol'
+)
+
+mkdir -p temp
+
+# function uninstall node module solc
+# and install with specfic version
+solidityVersion=''
+installSolidity(){
+  if [[ $solidityVersion == $1 ]]
+  then
+    return
+  else
+    printf "${Yellow} Uninstalling solidity version $solidityVersion ${NC}\n"
+    solidityVersion=$1
+  fi
+  npm uninstall -g solc
+  printf "${Yellow} Installing solidity version $1 ${NC}\n"
+  npm install -g --silent solc@${solidityVersion} &> /dev/null
+}
+
+getFilenamesAtPath() {
+  files=$(echo $1 | tr '-' '\n')
+  path=$2
+  filenames=''
+  for file in $files
+  do
+    filePath=$path/$file
+    filenames="${filenames} ${filePath}"
+  done
+  echo $filenames
+}
+
+for indx in ${!contracts[@]}
+do
+  printf "${Yellow} **** ${contracts[$indx]} ****${NC}\n"
+  curl ${contractsUrls[$indx]} -o temp/${contracts[$indx]}
+  urlFilename=${contractsUrls[$indx]##*/}
+  cp temp/${contracts[$indx]} temp/$urlFilename || true
+
+  actualSolidityVersion=$(grep 'pragma solidity' zkp/contracts/${contracts[$indx]}  | cut -d' ' -f 3 | cut -d';' -f 1 | cut -d'^' -f 2)
+  expectedSolidityVersion=$(grep 'pragma solidity' temp/${contracts[$indx]}  | cut -d' ' -f 3 | cut -d';' -f 1 | cut -d'^' -f 2)
+  
+  installSolidity $actualSolidityVersion
+  if [[ $(grep '^interface' zkp/contracts/${contracts[$indx]}) == "" ]]
+  then
+    if [[ $(grep '^import' zkp/contracts/${contracts[$indx]}) == "" ]]
+    then
+      solcjs --bin zkp/contracts/${contracts[$indx]} -o temp
+      installSolidity $expectedSolidityVersion
+      solcjs --bin temp/${contracts[$indx]} -o temp
+    else
+      imports=$(grep '^import' zkp/contracts/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
+      importFiles=$(getFilenamesAtPath $imports 'zkp/contracts')
+      solcjs $importFiles --bin zkp/contracts/${contracts[$indx]} -o temp
+
+      installSolidity $expectedSolidityVersion
+      imports=$(grep '^import' temp/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
+      importFiles=$(getFilenamesAtPath $imports 'temp')
+      solcjs $importFiles --bin temp/${contracts[$indx]} -o temp
+    fi
+  else
+    solcjs --abi zkp/contracts/${contracts[$indx]} -o temp
+    installSolidity $expectedSolidityVersion
+    solcjs --abi temp/${contracts[$indx]} -o temp
+  fi
+
+  str=*$(echo ${contracts[$indx]} | tr '.' '_')*
+  files=$(find temp -name $str)
+  
+  echo $files
+  (
+    diff -q $files && 
+    printf "\n${GREEN} ${contracts[$indx]} is latest ${NC}\n\n\n"
+  ) || printf "\n${RED} ${contracts[$indx]} is outdated ${NC}\n\n\n"
+
+done
+
+
+# bellow code checks
+# is ZoKrates docker image is outdated or not.
+
+if [[ $(uname -s) == "Darwin" ]]
+then
+  brew install jq
+fi
+
+if [[ $(uname -s) == "Linux" ]]
+then
+  sudo apt-get update
+  sudo apt-get install jq
+fi
+
+zokratesLatestTag=""
+tags=$(curl -s 'https://registry.hub.docker.com/v1/repositories/zokrates/zokrates/tags' | jq '.[]["name"]')
+
+for tag in ${tags}
+do
+  zokratesLatestTag=$(echo $tag | sed 's/"//g')
+done
+
+if [[ $(docker images -q zokrates/zokrates:$zokratesLatestTag) == "" ]] || [[ $(grep '^docker pull zokrates/zokrates:'$zokratesLatestTag nightfall) == "" ]]
+then
+  printf "${RED} Zokrates docker image is outdated ${NC}\n"
+else
+  printf "${GREEN} Zokrates docker image is latest ${NC}\n"
+fi
+
+rm -dr temp/
+npm uninstall -g solc
