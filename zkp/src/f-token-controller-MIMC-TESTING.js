@@ -7,13 +7,15 @@ arbitrary amounts of currency in zero knowlege.
 @author westlad, Chaitanya-Konda, iAmMichaelConnor
 */
 
+// TODO - populate own MerkleTree in smart contract, write quick code to find roots/sibling paths
+
 import contract from 'truffle-contract';
 import config from 'config';
 import jsonfile from 'jsonfile';
 // eslint-disable-next-line import/extensions
 import zokrates from '@eyblockchain/zokrates.js';
 import fs from 'fs';
-import { merkleTree } from '@eyblockchain/nightlite';
+// import { merkleTree } from '@eyblockchain/nightlite';
 import utils from './zkpUtils';
 import zkp from './f-token-zkp';
 import formatInputsForZkSnark from './format-inputs';
@@ -34,6 +36,9 @@ Verifier.setProvider(Web3.connect());
 
 const FToken = contract(jsonfile.readFileSync('./build/contracts/FToken.json'));
 FToken.setProvider(Web3.connect());
+
+const MerkleTree = contract(jsonfile.readFileSync('./build/contracts/MerkleTree.json'));
+MerkleTree.setProvider(Web3.connect());
 
 const shield = {}; // this field holds the current Shield contract instance.
 
@@ -403,13 +408,13 @@ async function transfer(
     account,
     fTokenShieldInstance,
     inputCommitments[0].commitment,
-    inputCommitments[0].commitmentIndex,
+    inputCommitments[0].index,
   );
   inputCommitments[1].siblingPath = await merkleTree.getSiblingPath(
     account,
     fTokenShieldInstance,
     inputCommitments[1].commitment,
-    inputCommitments[1].commitmentIndex,
+    inputCommitments[1].index,
   );
 
   // TODO: edit merkle-tree microservice API to accept 2 path requests at once, to avoid the possibility of the merkle-tree DB's root being updated between the 2 GET requests. Until then, we need to check that both paths share the same root with the below check:
@@ -420,13 +425,13 @@ async function transfer(
   // TODO: checkRoot() is not essential. It's only useful for debugging as we make iterative improvements to nightfall's zokrates files. Possibly delete in future.
   merkleTree.checkRoot(
     inputCommitments[0].commitment,
-    inputCommitments[0].commitmentIndex,
+    inputCommitments[0].index,
     inputCommitments[0].siblingPath,
     root,
   );
   merkleTree.checkRoot(
     inputCommitments[1].commitment,
-    inputCommitments[1].commitmentIndex,
+    inputCommitments[1].index,
     inputCommitments[1].siblingPath,
     root,
   );
@@ -537,8 +542,8 @@ async function transfer(
   console.log(`root: ${root} : ${utils.hexToFieldPreserve(root, p)}`);
   console.log(`inputCommitments[0].siblingPath:`, inputCommitments[0].siblingPath);
   console.log(`inputCommitments[1].siblingPath:`, inputCommitments[1].siblingPath);
-  console.log(`inputCommitments[0].commitmentIndex:`, inputCommitments[0].commitmentIndex);
-  console.log(`inputCommitments[1].commitmentIndex:`, inputCommitments[1].commitmentIndex);
+  console.log(`inputCommitments[0].index:`, inputCommitments[0].index);
+  console.log(`inputCommitments[1].index:`, inputCommitments[1].index);
   console.groupEnd();
 
   const publicInputHash = utils.concatenateThenHash(
@@ -564,11 +569,11 @@ async function transfer(
     new Element(senderSecretKey, 'field'),
     new Element(inputCommitments[0].salt, 'field'),
     ...inputCommitments[0].siblingPathElements.slice(1),
-    new Element(inputCommitments[0].commitmentIndex, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,
+    new Element(inputCommitments[0].index, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,
     new Element(inputCommitments[1].value, 'field', 128, 1),
     new Element(inputCommitments[1].salt, 'field'),
     ...inputCommitments[1].siblingPathElements.slice(1),
-    new Element(inputCommitments[1].commitmentIndex, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,
+    new Element(inputCommitments[1].index, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,
     new Element(inputCommitments[0].nullifier, 'field'),
     new Element(inputCommitments[1].nullifier, 'field'),
     new Element(outputCommitments[0].value, 'field', 128, 1),
@@ -637,9 +642,9 @@ async function transfer(
     return log.event === 'NewLeaves';
   });
   // eslint-disable-next-line no-param-reassign
-  outputCommitments[0].commitmentIndex = parseInt(newLeavesLog[0].args.minLeafIndex, 10);
+  outputCommitments[0].index = parseInt(newLeavesLog[0].args.minLeafIndex, 10);
   // eslint-disable-next-line no-param-reassign
-  outputCommitments[1].commitmentIndex = outputCommitments[0].commitmentIndex + 1;
+  outputCommitments[1].index = outputCommitments[0].index + 1;
   console.groupEnd();
 
   console.log('TRANSFER COMPLETE\n');
@@ -734,14 +739,14 @@ async function simpleFungibleBatchTransfer(
     account,
     fTokenShieldInstance,
     inputCommitment.commitment,
-    inputCommitment.commitmentIndex,
+    inputCommitment.index,
   );
 
   const root = inputCommitment.siblingPath[0];
   // TODO: checkRoot() is not essential. It's only useful for debugging as we make iterative improvements to nightfall's zokrates files.  Although we only strictly need the root to be reconciled within zokrates, it's easier to check and intercept any errors in js; so we'll first try to reconcole here. Possibly delete in future.
   merkleTree.checkRoot(
     inputCommitment.commitment,
-    inputCommitment.commitmentIndex,
+    inputCommitment.index,
     inputCommitment.siblingPath,
     root,
   );
@@ -764,7 +769,7 @@ async function simpleFungibleBatchTransfer(
     new Element(senderSecretKey, 'field'),
     new Element(inputCommitment.salt, 'field'),
     ...inputCommitment.siblingPathElements.slice(1),
-    new Element(inputCommitment.commitmentIndex, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,,
+    new Element(inputCommitment.index, 'field', 128, 1), // the binary decomposition of a leafIndex gives its path's 'left-right' positions up the tree. The decomposition is done inside the circuit.,,
     new Element(inputCommitment.nullifier, 'field'),
     ...outputCommitments.map(item => new Element(item.value, 'field', 128, 1)),
     ...receiversPublicKeys.map(item => new Element(item, 'field')),

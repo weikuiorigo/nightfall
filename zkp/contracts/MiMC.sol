@@ -10,12 +10,12 @@ pragma solidity ^0.5.0;
 *
 * Round constants are generated in sequence from a seed
 */
-library MiMC
+contract MiMC
 {
     function GetScalarField ()
         internal pure returns (uint256)
     {
-        return 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
+        return 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001; //base of field used
     }
 
     function Encipher( uint256 in_x, uint256 in_k )
@@ -81,9 +81,21 @@ library MiMC
         return MiMCpe7_mp( in_msgs, in_key, uint256(keccak256(abi.encodePacked(seed))), 91 );
     }
 
-    function Hash( uint256[] memory in_msgs )
-        public pure returns (uint256)
+    function mimcHash( bytes32[] memory in_msgs )
+        public pure returns (bytes32)
     {
-        return Hash( in_msgs, 0 );
+        uint256[] memory msgs = new uint256[](in_msgs.length);
+        for ( uint256 i=0; i < in_msgs.length; i++) {
+          msgs[i] = uint256(in_msgs[i]); //convert to uints so we can do arithmetic
+        }
+        return bytes32(Hash( msgs, 0 ));
+    }
+    function mimcHash2( bytes32[2] memory in_msgs )
+    public pure returns (bytes32)
+    {
+    uint256[] memory msgs = new uint256[](in_msgs.length);
+      msgs[0] = uint256(in_msgs[0]); //convert to uints so we can do arithmetic
+      msgs[1] = uint256(in_msgs[1]); //convert to uints so we can do arithmetic
+    return bytes32(Hash( msgs, 0 ));
     }
   }
