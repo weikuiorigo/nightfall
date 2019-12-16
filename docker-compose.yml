@@ -75,7 +75,6 @@ services:
     restart: on-failure
     depends_on:
       - ganache
-      - merkle-tree
     volumes:
       - ./zkp/src:/app/src
       - ./zkp/build:/app/build
