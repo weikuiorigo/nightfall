@@ -149,7 +149,7 @@ Note that it can take up to 10 mins to compute a transfer proof (depending on yo
 If you want to close the application, make sure to stop containers and remove containers, networks, volumes, and images created by up, using:
 
 ```sh
-docker-compose -f docker-compose.merkle-tree.yml -f docker-compose.yml down -v
+docker-compose down -v
 ```
 
 ### To run zkp service unit tests
