@@ -2,7 +2,7 @@
 set -e
 
 GREEN='\033[0;32m'
-Yellow="\033[0;33m" 
+Yellow='\033[0;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
@@ -71,9 +71,9 @@ do
   expectedSolidityVersion=$(grep 'pragma solidity' temp/${contracts[$indx]}  | cut -d' ' -f 3 | cut -d';' -f 1 | cut -d'^' -f 2)
   
   installSolidity $actualSolidityVersion
-  if [[ $(grep '^interface' zkp/contracts/${contracts[$indx]}) == "" ]]
+  if [[ $(grep '^interface' zkp/contracts/${contracts[$indx]}) == '' ]]
   then
-    if [[ $(grep '^import' zkp/contracts/${contracts[$indx]}) == "" ]]
+    if [[ $(grep '^import' zkp/contracts/${contracts[$indx]}) == '' ]]
     then
       solcjs --bin zkp/contracts/${contracts[$indx]} -o temp
       installSolidity $expectedSolidityVersion
@@ -97,9 +97,8 @@ do
   str=*$(echo ${contracts[$indx]} | tr '.' '_')*
   files=$(find temp -name $str)
   
-  echo $files
   (
-    diff -q $files && 
+    diff -q $files &> /dev/null &&
     printf "\n${GREEN} ${contracts[$indx]} is latest ${NC}\n\n\n"
   ) || printf "\n${RED} ${contracts[$indx]} is outdated ${NC}\n\n\n"
 
@@ -109,18 +108,18 @@ done
 # bellow code checks
 # is ZoKrates docker image is outdated or not.
 
-if [[ $(uname -s) == "Darwin" ]]
+if [[ $(uname -s) == 'Darwin' ]]
 then
   brew install jq
 fi
 
-if [[ $(uname -s) == "Linux" ]]
+if [[ $(uname -s) == 'Linux' ]]
 then
   sudo apt-get update
   sudo apt-get install jq
 fi
 
-zokratesLatestTag=""
+zokratesLatestTag=''
 tags=$(curl -s 'https://registry.hub.docker.com/v1/repositories/zokrates/zokrates/tags' | jq '.[]["name"]')
 
 for tag in ${tags}
@@ -128,7 +127,7 @@ do
   zokratesLatestTag=$(echo $tag | sed 's/"//g')
 done
 
-if [[ $(docker images -q zokrates/zokrates:$zokratesLatestTag) == "" ]] || [[ $(grep '^docker pull zokrates/zokrates:'$zokratesLatestTag nightfall) == "" ]]
+if [[ $(docker images -q zokrates/zokrates:$zokratesLatestTag) == '' ]] || [[ $(grep '^docker pull zokrates/zokrates:'$zokratesLatestTag nightfall) == '' ]]
 then
   printf "${RED} Zokrates docker image is outdated ${NC}\n"
 else
