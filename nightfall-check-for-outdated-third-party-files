@@ -40,12 +40,27 @@ installSolidity(){
   then
     return
   else
-    printf "${Yellow} Uninstalling solidity version $solidityVersion ${NC}\n"
     solidityVersion=$1
   fi
-  npm uninstall -g solc
-  printf "${Yellow} Installing solidity version $1 ${NC}\n"
+  npm uninstall -g solc &> /dev/null
   npm install -g --silent solc@${solidityVersion} &> /dev/null
+}
+
+logProgress(){
+  progress=$1
+  str=''
+  space='____________________'
+  while [ $progress -ge 10 ]
+  do
+    str="$str##"
+    progress=$(( progress - 10 ))
+  done
+  echo -ne $(echo $str$space | cut -c1-20 ) $1 "%" "\r"
+  if [[ $1 == 100 ]]
+  then
+    sleep 1
+    printf '\r'; printf ' %0.s' {0..30}; printf '\r'
+  fi
 }
 
 getFilenamesAtPath() {
@@ -62,45 +77,66 @@ getFilenamesAtPath() {
 
 for indx in ${!contracts[@]}
 do
-  printf "${Yellow} **** ${contracts[$indx]} ****${NC}\n"
-  curl ${contractsUrls[$indx]} -o temp/${contracts[$indx]}
+  printf "\nChecking ${contracts[$indx]}\n"
+  
+  curl ${contractsUrls[$indx]} -o temp/${contracts[$indx]} &> /dev/null
+  logProgress 10
+
   urlFilename=${contractsUrls[$indx]##*/}
-  cp temp/${contracts[$indx]} temp/$urlFilename || true
+  cp temp/${contracts[$indx]} temp/$urlFilename &> /dev/null || true
 
   actualSolidityVersion=$(grep 'pragma solidity' zkp/contracts/${contracts[$indx]}  | cut -d' ' -f 3 | cut -d';' -f 1 | cut -d'^' -f 2)
   expectedSolidityVersion=$(grep 'pragma solidity' temp/${contracts[$indx]}  | cut -d' ' -f 3 | cut -d';' -f 1 | cut -d'^' -f 2)
   
   installSolidity $actualSolidityVersion
+  logProgress 20
+
   if [[ $(grep '^interface' zkp/contracts/${contracts[$indx]}) == '' ]]
   then
     if [[ $(grep '^import' zkp/contracts/${contracts[$indx]}) == '' ]]
     then
       solcjs --bin zkp/contracts/${contracts[$indx]} -o temp
+      logProgress 30
+
       installSolidity $expectedSolidityVersion
+      logProgress 60
+
       solcjs --bin temp/${contracts[$indx]} -o temp
+      logProgress 80
     else
       imports=$(grep '^import' zkp/contracts/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
       importFiles=$(getFilenamesAtPath $imports 'zkp/contracts')
       solcjs $importFiles --bin zkp/contracts/${contracts[$indx]} -o temp
+      logProgress 30
 
       installSolidity $expectedSolidityVersion
+      logProgress 60
+
       imports=$(grep '^import' temp/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
       importFiles=$(getFilenamesAtPath $imports 'temp')
       solcjs $importFiles --bin temp/${contracts[$indx]} -o temp
+      logProgress 80
     fi
   else
     solcjs --abi zkp/contracts/${contracts[$indx]} -o temp
+    logProgress 30
+
     installSolidity $expectedSolidityVersion
+    logProgress 60
+
     solcjs --abi temp/${contracts[$indx]} -o temp
+    logProgress 60
   fi
 
   str=*$(echo ${contracts[$indx]} | tr '.' '_')*
   files=$(find temp -name $str)
   
+  logProgress 100
+
   (
     diff -q $files &> /dev/null &&
-    printf "\n${GREEN} ${contracts[$indx]} is latest ${NC}\n\n\n"
-  ) || printf "\n${RED} ${contracts[$indx]} is outdated ${NC}\n\n\n"
+    printf "${GREEN}${contracts[$indx]} is latest ${NC}\n"
+  ) || printf "${RED}${contracts[$indx]} is outdated ${NC}\n"
 
 done
 
@@ -108,31 +144,39 @@ done
 # bellow code checks
 # is ZoKrates docker image is outdated or not.
 
+printf "\nChecking ZoKrates Docker Image\n"
+logProgress 10
+
 if [[ $(uname -s) == 'Darwin' ]]
 then
-  brew install jq
+  brew install jq &> /dev/null
+  logProgress 30
 fi
 
 if [[ $(uname -s) == 'Linux' ]]
 then
-  sudo apt-get update
-  sudo apt-get install jq
+  sudo apt-get update &> /dev/null
+  sudo apt-get install jq &> /dev/null
+  logProgress 30
 fi
 
 zokratesLatestTag=''
 tags=$(curl -s 'https://registry.hub.docker.com/v1/repositories/zokrates/zokrates/tags' | jq '.[]["name"]')
+logProgress 60
 
 for tag in ${tags}
 do
   zokratesLatestTag=$(echo $tag | sed 's/"//g')
 done
 
+logProgress 100
+
 if [[ $(docker images -q zokrates/zokrates:$zokratesLatestTag) == '' ]] || [[ $(grep '^docker pull zokrates/zokrates:'$zokratesLatestTag nightfall) == '' ]]
 then
-  printf "${RED} Zokrates docker image is outdated ${NC}\n"
+  printf "${RED}Zokrates docker image is outdated ${NC}\n"
 else
-  printf "${GREEN} Zokrates docker image is latest ${NC}\n"
+  printf "${GREEN}Zokrates docker image is latest ${NC}\n"
 fi
 
 rm -dr temp/
-npm uninstall -g solc
+npm uninstall -g solc &> /dev/null
