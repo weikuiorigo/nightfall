@@ -5,7 +5,7 @@
 */
 
 import config from 'config';
-import merkleTree from './rest/merkle-tree';
+import { merkleTree } from '@eyblockchain/nightlite';
 import utils from './zkpUtils';
 
 async function startEventFilter() {
