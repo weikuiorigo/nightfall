@@ -2,7 +2,8 @@ import request from 'request';
 import config from 'config';
 import utilsPoll from './utils-poll';
 
-const url = `${config.merkleTree.host}:${config.merkleTree.port}`;
+const url = `${process.env.MERKLE_TREE_HOST}:${process.env.MERKLE_TREE_PORT}`;
+console.log('url xxyyzz', url);
 
 /**
 Start the event filter in the merkle-tree microservice, for the given contract
