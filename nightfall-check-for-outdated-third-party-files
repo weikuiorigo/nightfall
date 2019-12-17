@@ -77,6 +77,7 @@ getFilenamesAtPath() {
 
 for indx in ${!contracts[@]}
 do
+  fileMatcher=''
   printf "\nChecking ${contracts[$indx]}\n"
   
   curl ${contractsUrls[$indx]} -o temp/${contracts[$indx]} &> /dev/null
@@ -117,6 +118,7 @@ do
       solcjs $importFiles --bin temp/${contracts[$indx]} -o temp
       logProgress 80
     fi
+    fileMatcher=*$(echo ${contracts[$indx]} | tr '.' '_')*bin
   else
     solcjs --abi zkp/contracts/${contracts[$indx]} -o temp
     logProgress 30
@@ -126,11 +128,11 @@ do
 
     solcjs --abi temp/${contracts[$indx]} -o temp
     logProgress 60
+
+    fileMatcher=*$(echo ${contracts[$indx]} | tr '.' '_')*abi
   fi
 
-  str=*$(echo ${contracts[$indx]} | tr '.' '_')*
-  files=$(find temp -name $str)
-  
+  files=$(find temp -name $fileMatcher)
   logProgress 100
 
   (
