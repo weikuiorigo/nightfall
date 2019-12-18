@@ -63,6 +63,34 @@ logProgress(){
   fi
 }
 
+compareSolidityVersion(){
+  if [[ $1 == $2 ]]
+  then
+    return
+  fi
+
+  cutAt=1
+
+  while [[ $(echo $1 | cut -d '.' -f $cutAt) != '' ]]
+  do
+    v1=$(echo $1 | cut -d '.' -f $cutAt)
+    v2=$(echo $2 | cut -d '.' -f $cutAt)
+
+    if [[ $v1 == $v2 ]]
+    then
+      cutAt=$(( cutAt + 1 ))
+      continue
+    elif [[ $v1 < $v2 ]]
+    then
+      echo outdated
+      break
+    else
+      echo latest
+      break
+    fi
+  done
+}
+
 getFilenamesAtPath() {
   files=$(echo $1 | tr '-' '\n')
   path=$2
@@ -139,6 +167,11 @@ do
     diff -q $files &> /dev/null &&
     printf "${GREEN}${contracts[$indx]} is latest ${NC}\n"
   ) || printf "${RED}${contracts[$indx]} is outdated ${NC}\n"
+
+  if [[ $(compareSolidityVersion $actualSolidityVersion $expectedSolidityVersion) == "outdated" ]]
+  then
+    printf "${Yellow}Solidity version $actualSolidityVersion is outdated by version $expectedSolidityVersion ${NC}\n"
+  fi
 
 done
 
