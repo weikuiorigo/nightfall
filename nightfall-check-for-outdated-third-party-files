@@ -46,6 +46,7 @@ installSolidity(){
   npm install -g --silent solc@${solidityVersion} &> /dev/null
 }
 
+# this function imitate a progress bar to the terminal
 logProgress(){
   progress=$1
   str=''
@@ -63,6 +64,7 @@ logProgress(){
   fi
 }
 
+# compare used solidity version of local and repo's
 compareSolidityVersion(){
   if [[ $1 == $2 ]]
   then
@@ -91,6 +93,18 @@ compareSolidityVersion(){
   done
 }
 
+# this function file diff for a particular contract
+doFileDiff() {
+  logProgress 100
+
+  printf "${Yellow}WARN: compilation failed. Doing a Solidity file Diff zkp/contracts/${1} temp/${1} ${NC}\n"
+  (
+    diff -q zkp/contracts/$1 temp/$1 &> /dev/null &&
+    printf "${GREEN}${contracts[$indx]} is latest ${NC}\n"
+  ) || printf "${RED}${contracts[$indx]} is outdated ${NC}\n"
+}
+
+# get file matching wild card for specfic path
 getFilenamesAtPath() {
   files=$(echo $1 | tr '-' '\n')
   path=$2
@@ -103,11 +117,34 @@ getFilenamesAtPath() {
   echo $filenames
 }
 
+# recursive function to get import solidity files
+getImportedFileName() {
+  filename=$1
+  path=$2
+  imports=$(grep '^import' $path/$filename  | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1)
+  if [[ $imports == '' ]]
+  then
+    return
+  fi
+
+  importStrings=$(echo $imports | tr ' ' '-')
+  importFiles=$(getFilenamesAtPath $importStrings $path)
+
+  for import in $imports
+  do
+    importFiles="$importFiles $(getImportedFileName $import $path)"
+  done
+
+  echo $importFiles
+}
+
+
+# for loop iteration on list of solidity files
 for indx in ${!contracts[@]}
 do
   fileMatcher=''
   printf "\nChecking ${contracts[$indx]}\n"
-  
+
   curl ${contractsUrls[$indx]} -o temp/${contracts[$indx]} &> /dev/null
   logProgress 10
 
@@ -122,40 +159,41 @@ do
 
   if [[ $(grep '^interface' zkp/contracts/${contracts[$indx]}) == '' ]]
   then
-    if [[ $(grep '^import' zkp/contracts/${contracts[$indx]}) == '' ]]
-    then
-      solcjs --bin zkp/contracts/${contracts[$indx]} -o temp
-      logProgress 30
-
-      installSolidity $expectedSolidityVersion
-      logProgress 60
-
-      solcjs --bin temp/${contracts[$indx]} -o temp
-      logProgress 80
-    else
-      imports=$(grep '^import' zkp/contracts/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
-      importFiles=$(getFilenamesAtPath $imports 'zkp/contracts')
-      solcjs $importFiles --bin zkp/contracts/${contracts[$indx]} -o temp
-      logProgress 30
-
-      installSolidity $expectedSolidityVersion
-      logProgress 60
-
-      imports=$(grep '^import' temp/${contracts[$indx]} | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1 | tr '\n' '-')
-      importFiles=$(getFilenamesAtPath $imports 'temp')
-      solcjs $importFiles --bin temp/${contracts[$indx]} -o temp
-      logProgress 80
-    fi
-    fileMatcher=*$(echo ${contracts[$indx]} | tr '.' '_')*bin
-  else
-    solcjs --abi zkp/contracts/${contracts[$indx]} -o temp
+    importFiles=$(getImportedFileName ${contracts[$indx]} 'zkp/contracts')
+    solcjs $importFiles --bin zkp/contracts/${contracts[$indx]} -o temp &> /dev/null || {
+      doFileDiff ${contracts[$indx]}
+      continue
+    }
     logProgress 30
 
     installSolidity $expectedSolidityVersion
     logProgress 60
 
-    solcjs --abi temp/${contracts[$indx]} -o temp
+    importFiles=$(getImportedFileName ${contracts[$indx]} 'temp')
+    solcjs $importFiles --bin temp/${contracts[$indx]} -o temp &> /dev/null || {
+      doFileDiff ${contracts[$indx]}
+      continue
+    }
+    logProgress 80
+
+    fileMatcher=*$(echo ${contracts[$indx]} | tr '.' '_')*bin
+  else
+    importFiles=$(getImportedFileName ${contracts[$indx]} 'zkp/contracts')
+    solcjs $importFiles --abi zkp/contracts/${contracts[$indx]} -o temp &> /dev/null || {
+      doFileDiff ${contracts[$indx]}
+      continue
+    }
+    logProgress 30
+
+    installSolidity $expectedSolidityVersion
     logProgress 60
+
+    importFiles=$(getImportedFileName ${contracts[$indx]} 'temp')
+    solcjs $importFiles --abi temp/${contracts[$indx]} -o temp &> /dev/null || {
+      doFileDiff ${contracts[$indx]}
+      continue
+    }
+    logProgress 80
 
     fileMatcher=*$(echo ${contracts[$indx]} | tr '.' '_')*abi
   fi
