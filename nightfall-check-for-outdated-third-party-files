@@ -214,7 +214,7 @@ do
 done
 
 
-# bellow code checks
+# below code checks
 # is ZoKrates docker image is outdated or not.
 
 printf "\nChecking ZoKrates Docker Image\n"
