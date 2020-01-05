@@ -15,8 +15,10 @@ contractsUrls=(
   'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/erc721-metadata.sol'
   'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/erc721-token-receiver.sol'
   'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/ownership/ownable.sol'
-  'https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/math/SafeMath.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/math/safe-math.sol'
   'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/utils/supports-interface.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/nf-token.sol'
+  'https://raw.githubusercontent.com/0xcert/ethereum-erc721/master/src/contracts/tokens/nf-token-metadata.sol'
 )
 contracts=(
   'AddressUtils.sol'
@@ -28,6 +30,8 @@ contracts=(
   'Ownable.sol'
   'SafeMath.sol'
   'SupportsInterface.sol'
+  'NFToken.sol'
+  'NFTokenMetadata.sol'
 )
 
 mkdir -p temp
@@ -106,7 +110,7 @@ doFileDiff() {
 
 # get file matching wild card for specfic path
 getFilenamesAtPath() {
-  files=$(echo $1 | tr '-' '\n')
+  files=$(echo $1 | tr '%' '\n')
   path=$2
   filenames=''
   for file in $files
@@ -121,13 +125,13 @@ getFilenamesAtPath() {
 getImportedFileName() {
   filename=$1
   path=$2
-  imports=$(grep '^import' $path/$filename  | cut -d ' ' -f 2 | cut -d '/' -f 2 | cut -d '"' -f 1)
+  imports=$(grep '^import' $path/$filename  | cut -d ' ' -f 2 | sed 's|.*/||' | cut -d '"' -f 1)
   if [[ $imports == '' ]]
   then
     return
   fi
 
-  importStrings=$(echo $imports | tr ' ' '-')
+  importStrings=$(echo $imports | tr ' ' '%')
   importFiles=$(getFilenamesAtPath $importStrings $path)
 
   for import in $imports
