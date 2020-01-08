@@ -177,11 +177,7 @@ def main(field publicInputHash, private field inputValue, private field[2] secre
 
 	// concatenate siblings and hash all the way up to the root using a MiMC hash
 	field[128] orderBits = unpack128(order) // need to access an array of bits
-<<<<<<< HEAD
-  field mimcHash = pack256([0, 0, 0, ...shaHash[0..253]]) //fit the sha256 has into a MiMC hash for path computation by losing the 3 LSBs
-=======
-  field mimcHash = pack256([0, 0, 0, ...shaHash[0..253]]) //fit the sha256 has into a MiMC hash for path computation by losing the 3 LSBs
->>>>>>> changes to merkle tree code
+  field mimcHash = pack256([0, 0, 0, ...shaHash[0..253]]) // fit the sha256 has into a MiMC hash for path computation by losing the 3 LSBs
 	for field i in 0..32 do
 		field j = 31-i
     field k = 127-i
