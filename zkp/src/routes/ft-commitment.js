@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { erc20 } from '@eyblockchain/nightlite';
 import utils from '../zkpUtils';
 import fTokenController from '../f-token-controller';
-import { getVkId, getTruffleContractInstance } from '../contractUtils';
+import { getTruffleContractInstance } from '../contractUtils';
 
 const router = Router();
 
@@ -22,7 +22,6 @@ async function mint(req, res, next) {
   const { address } = req.headers;
   const { value, owner } = req.body;
   const salt = await utils.rndHex(32);
-  const vkId = await getVkId('MintFToken');
   const {
     contractJson: fTokenShieldJson,
     contractInstance: fTokenShield,
@@ -33,7 +32,6 @@ async function mint(req, res, next) {
       value,
       owner.publicKey,
       salt,
-      vkId,
       {
         fTokenShieldJson,
         fTokenShieldAddress: fTokenShield.address,
@@ -97,7 +95,6 @@ async function transfer(req, res, next) {
       outputCommitments,
       receiver.publicKey,
       sender.secretKey,
-      vkId,
       {
         fTokenShieldJson,
         fTokenShieldAddress: fTokenShield.address,
@@ -138,7 +135,6 @@ async function transfer(req, res, next) {
 async function burn(req, res, next) {
   const { value, salt, commitment, commitmentIndex, receiver, sender } = req.body;
   const { address } = req.headers;
-  const vkId = await getVkId('BurnFToken');
   const {
     contractJson: fTokenShieldJson,
     contractInstance: fTokenShield,
@@ -151,7 +147,6 @@ async function burn(req, res, next) {
       salt,
       commitment,
       commitmentIndex,
-      vkId,
       {
         fTokenShieldJson,
         fTokenShieldAddress: fTokenShield.address,
@@ -294,7 +289,6 @@ async function simpleFTCommitmentBatchTransfer(req, res, next) {
       outputCommitments,
       receiversPublicKeys,
       sender.secretKey,
-      await getVkId('SimpleBatchTransferFToken'),
       {
         account: address,
         fTokenShieldJson,
