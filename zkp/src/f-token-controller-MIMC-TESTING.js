@@ -7,15 +7,22 @@ arbitrary amounts of currency in zero knowlege.
 @author westlad, Chaitanya-Konda, iAmMichaelConnor
 */
 
+<<<<<<< HEAD
 // TODO - populate own MerkleTree in smart contract, write quick code to find roots/sibling paths
 
+=======
+>>>>>>> renaming files and adding mimc versions for testing
 import contract from 'truffle-contract';
 import config from 'config';
 import jsonfile from 'jsonfile';
 // eslint-disable-next-line import/extensions
 import zokrates from '@eyblockchain/zokrates.js';
 import fs from 'fs';
+<<<<<<< HEAD
 // import { merkleTree } from '@eyblockchain/nightlite';
+=======
+import { merkleTree } from '@eyblockchain/nightlite';
+>>>>>>> renaming files and adding mimc versions for testing
 import utils from './zkpUtils';
 import zkp from './f-token-zkp';
 import formatInputsForZkSnark from './format-inputs';
@@ -37,9 +44,12 @@ Verifier.setProvider(Web3.connect());
 const FToken = contract(jsonfile.readFileSync('./build/contracts/FToken.json'));
 FToken.setProvider(Web3.connect());
 
+<<<<<<< HEAD
 const MerkleTree = contract(jsonfile.readFileSync('./build/contracts/MerkleTree.json'));
 MerkleTree.setProvider(Web3.connect());
 
+=======
+>>>>>>> renaming files and adding mimc versions for testing
 const shield = {}; // this field holds the current Shield contract instance.
 
 async function unlockAccount(address, password) {

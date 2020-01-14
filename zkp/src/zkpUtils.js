@@ -384,7 +384,7 @@ update: [input string to hash (an array of bytes (in decimal representaion) [byt
 digest: [output format ("hex" in our case)]
 slice: [begin value] outputs the items in the array on and after the 'begin value'
  */
-function concatenateThenHash(items) {
+function concatenateThenHash(...items) {
   const concatvalue = items
     .map(item => Buffer.from(strip0x(item), 'hex'))
     .reduce((acc, item) => concatenate(acc, item));

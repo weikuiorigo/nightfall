@@ -80,7 +80,7 @@ beforeAll(async () => {
   pkB = await Promise.all(pkB);
   S_A_C = await utils.rndHex(32);
   pkA = utils.strip0x(utils.hash(skA));
-  Z_A_C = utils.concatenateThenHash(C, pkA, S_A_C);
+  Z_A_C = utils.concatenateThenHash([C, pkA, S_A_C]);
 });
 
 // eslint-disable-next-line no-undef

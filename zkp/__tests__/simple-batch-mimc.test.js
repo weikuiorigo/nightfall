@@ -91,7 +91,10 @@ describe('f-token-controller.js tests', () => {
   // Bob then has E+G at total of 70 ETH
   // Bob sends H to Alice and keeps I (Bob has 50 ETH and Alice has 10+20=30 ETH)
 
+<<<<<<< HEAD
   // MiMC - works
+=======
+>>>>>>> renaming files and adding mimc versions for testing
   test('Should create 10000 tokens in accounts[0]', async () => {
     // fund some accounts with FToken
     const AMOUNT = 10000;

@@ -47,9 +47,9 @@ contract MerkleTree is MiMC {
     event NewLeaf(uint leafIndex, bytes32 leafValue, bytes32 root);
     event NewLeaves(uint minLeafIndex, bytes32[] leafValues, bytes32 root);
 
-    event Output(bytes32[2] input, bytes32[1] output, uint nodeIndex, uint256 leafCount); // for debugging only
+    event Output(bytes32 leftInput, bytes32 rightInput, bytes32 output, uint nodeIndex); // for debugging only
 
-    uint public treeHeight = 32; //change back to 32 after testing
+    uint public treeHeight = 32;
     uint public treeWidth = 2 ** treeHeight; // 2 ** treeHeight
     uint256 public leafCount; // the number of leaves currently in the tree
 
@@ -66,13 +66,12 @@ contract MerkleTree is MiMC {
     //Changed to bytes32 for MiMC hashing
     bytes32 zero = 0x0000000000000000000000000000000000000000000000000000000000000000;
     bytes32[33] frontier; // the right-most 'frontier' of nodes required to calculate the new root when the next new leaf value is added.
-    //bytes32[] input;
 
     /**
     @notice Get the index of the frontier (or 'storage slot') into which we will next store a nodeValue (based on the leafIndex currently being inserted). See the top-level README for a detailed explanation.
     @return uint - the index of the frontier (or 'storage slot') into which we will next store a nodeValue
     */
-    function getFrontierSlot(uint leafIndex) public pure returns (uint slot) {
+    function getFrontierSlot(uint leafIndex) private pure returns (uint slot) {
         slot = 0;
         if ( leafIndex % 2 == 1 ) {
             uint exp1 = 1;
@@ -104,10 +103,10 @@ contract MerkleTree is MiMC {
         uint nodeIndex = leafCount + treeWidth - 1;
         bytes32 nodeValue = leafValue; // nodeValue is the hash, which iteratively gets overridden to the top of the tree until it becomes the root.
 
-        //bytes32 leftInput; //can remove these and just use input[0] input[1]
-        //bytes32 rightInput;
-        bytes32[2] memory input; //input of the hash fuction
-        bytes32[1] memory output; // output of the hash function
+        bytes32 leftInput; //can remove these and just use input[0] input[1]
+        bytes32 rightInput;
+        bytes32[] memory input; //input of the hash fuction
+        bytes32 output; // output of the hash function
 
         for (uint level = 0; level < treeHeight; level++) {
 
@@ -115,30 +114,30 @@ contract MerkleTree is MiMC {
 
             if (nodeIndex % 2 == 0) {
                 // even nodeIndex
-                //leftInput = frontier[level];
-                //rightInput = nodeValue;
-                input[0] = frontier[level];
-                input[1] = nodeValue;
-
-                output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                leftInput = frontier[level];
+                rightInput = nodeValue;
+                input[0] = leftInput;
+                input[1] = rightInput;
+                output = mimcHash(input); // mimc hash of concatenation of each node
+                nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                 nodeIndex = (nodeIndex - 1) / 2; // move one row up the tree
-                emit Output(input, output, nodeIndex, leafCount); // for debugging only
+
+                emit Output(leftInput, rightInput, output, nodeIndex); // for debugging only
             } else {
                 // odd nodeIndex
-                //leftInput = nodeValue;
-                //rightInput = zero;
-                input[0] = nodeValue;
-                input[1] = zero;
-
-                output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                leftInput = nodeValue;
+                rightInput = zero;
+                input[0] = leftInput;
+                input[1] = rightInput;
+                output = mimcHash(input); // mimc hash of concatenation of each node
+                nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                 nodeIndex = nodeIndex / 2; // move one row up the tree
-                emit Output(input, output, nodeIndex, leafCount); // for debugging only
+
+                emit Output(leftInput, rightInput, output, nodeIndex); // for debugging only
             }
         }
 
-        root = nodeValue;
+        root = output;
 
         emit NewLeaf(leafCount, leafValue, root); // this event is what the merkle-tree microservice's filter will listen for.
 
@@ -178,10 +177,10 @@ contract MerkleTree is MiMC {
         uint nodeIndex;
         bytes32 nodeValue;
 
-        //bytes32 leftInput;
-        //bytes32 rightInput;
-        bytes32[2] memory input;
-        bytes32[1] memory output; // the output of the hash
+        bytes32 leftInput;
+        bytes32 rightInput;
+        bytes32[] memory input;
+        bytes32 output; // the output of the hash
 
         // consider each new leaf in turn, from left to right:
         for (uint leafIndex = leafCount; leafIndex < leafCount + numberOfLeaves; leafIndex++) {
@@ -199,25 +198,25 @@ contract MerkleTree is MiMC {
             for (uint level = 1; level <= slot; level++) {
                 if (nodeIndex % 2 == 0) {
                     // even nodeIndex
-                    //leftInput = frontier[level - 1];
-                    //rightInput = nodeValue;
-                    input[0] = frontier[level - 1]; //replace with push?
-                    input[1] = nodeValue;
-                    output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                    //emit Output(input, output, nodeIndex, leafCount); // for debugging only
+                    leftInput = frontier[level - 1];
+                    rightInput = nodeValue;
+                    input[0] = leftInput; //replace with push?
+                    input[1] = rightInput;
+                    output = mimcHash(input); // mimc hash of concatenation of each node
+                    // emit Output(leftInput, rightInput, output[0], level, nodeIndex); // for debugging only
 
-                    nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                    nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                     nodeIndex = (nodeIndex - 1) / 2; // move one row up the tree
                 } else {
                     // odd nodeIndex
-                    //leftInput = nodeValue;
-                    //rightInput = zero;
-                    input[0] = nodeValue;
-                    input[1] = zero;
-                    output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                    //emit Output(input, output[0], level, nodeIndex); // for debugging only
+                    leftInput = nodeValue;
+                    rightInput = zero;
+                    input[0] = leftInput;
+                    input[1] = rightInput;
+                    output = mimcHash(input); // mimc hash of concatenation of each node
+                    // emit Output(leftInput, rightInput, output[0], level, nodeIndex); // for debugging only
 
-                    nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                    nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                     nodeIndex = nodeIndex / 2; // the parentIndex, but will become the nodeIndex of the next level
                 }
             }
@@ -229,33 +228,30 @@ contract MerkleTree is MiMC {
 
             if (nodeIndex % 2 == 0) {
                 // even nodeIndex
-                //leftInput = frontier[level - 1];
-                //rightInput = nodeValue;
-                input[0] = frontier[level - 1];
-                input[1] = nodeValue;
-                output[0] = mimcHash2(input); // mimc hash of concatenation of each node
+                leftInput = frontier[level - 1];
+                rightInput = nodeValue;
+                input[0] = leftInput;
+                input[1] = rightInput;
+                output = mimcHash(input); // mimc hash of concatenation of each node
+                // emit Output(leftInput, rightInput, output[0], level, nodeIndex); // for debugging only
 
-                nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                 nodeIndex = (nodeIndex - 1) / 2;  // the parentIndex, but will become the nodeIndex of the next level
-
-                //emit Output(input, output, nodeIndex, leafCount); // for debugging only
             } else {
                 // odd nodeIndex
-                //leftInput = nodeValue;
-                //rightInput = zero;
-                input[0] = nodeValue;
-                input[1] = zero;
-                output[0] = mimcHash2(input); // mimc hash of concatenation of each node
+                leftInput = nodeValue;
+                rightInput = zero;
+                input[0] = leftInput;
+                input[1] = rightInput;
+                output = mimcHash(input); // mimc hash of concatenation of each node
+                // emit Output(leftInput, rightInput, output[0], level, nodeIndex); // for debugging only
 
-                nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                nodeValue = output; // the parentValue, but will become the nodeValue of the next level
                 nodeIndex = nodeIndex / 2;  // the parentIndex, but will become the nodeIndex of the next level
-
-                //emit Output(input, output, nodeIndex, leafCount); // for debugging only
             }
-
         }
 
-        root = nodeValue;
+        root = output;
 
         emit NewLeaves(leafCount, leafValues, root); // this event is what the merkle-tree microservice's filter will listen for.
 
