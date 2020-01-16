@@ -7,22 +7,15 @@ arbitrary amounts of currency in zero knowlege.
 @author westlad, Chaitanya-Konda, iAmMichaelConnor
 */
 
-<<<<<<< HEAD
 // TODO - populate own MerkleTree in smart contract, write quick code to find roots/sibling paths
 
-=======
->>>>>>> renaming files and adding mimc versions for testing
 import contract from 'truffle-contract';
 import config from 'config';
 import jsonfile from 'jsonfile';
 // eslint-disable-next-line import/extensions
 import zokrates from '@eyblockchain/zokrates.js';
 import fs from 'fs';
-<<<<<<< HEAD
 // import { merkleTree } from '@eyblockchain/nightlite';
-=======
-import { merkleTree } from '@eyblockchain/nightlite';
->>>>>>> renaming files and adding mimc versions for testing
 import utils from './zkpUtils';
 import zkp from './f-token-zkp';
 import formatInputsForZkSnark from './format-inputs';
@@ -44,13 +37,14 @@ Verifier.setProvider(Web3.connect());
 const FToken = contract(jsonfile.readFileSync('./build/contracts/FToken.json'));
 FToken.setProvider(Web3.connect());
 
-<<<<<<< HEAD
 const MerkleTree = contract(jsonfile.readFileSync('./build/contracts/MerkleTree.json'));
 MerkleTree.setProvider(Web3.connect());
 
-=======
->>>>>>> renaming files and adding mimc versions for testing
 const shield = {}; // this field holds the current Shield contract instance.
+const mimcTestingCommits = [{}];
+mimcTestingCommits.commitment = [{}];
+mimcTestingCommits.commitment.sibPath = [{}];
+mimcTestingCommits.commitment.pathIndex = [{}];
 
 async function unlockAccount(address, password) {
   const web3 = Web3.connection();
@@ -88,6 +82,49 @@ async function getBalance(address) {
   const fTokenShieldInstance = shield[address] ? shield[address] : await FTokenShield.deployed();
   const fToken = await FToken.at(await fTokenShieldInstance.getFToken.call());
   return fToken.balanceOf.call(address);
+}
+
+async function getRoots(root) {
+  const fTokenShieldInstance = await FTokenShield.deployed();
+  // const fToken = await FToken.at(await fTokenShieldInstance.getFToken.call());
+  const shieldRoot = fTokenShieldInstance.roots.call(root);
+  if (shieldRoot !== root) throw new Error('no matching root');
+  else {
+    return shieldRoot;
+  }
+}
+
+async function getPath(txReceipt, commitment) {
+  const inputCommitment = { commitment };
+  const outputLog = txReceipt.logs.filter(log => {
+    return log.event === 'Output';
+  });
+  console.log('outputLog 1:', outputLog[0]);
+  // console.log('outputLog input[0]:', outputLog[0].args.input[0]);
+  console.log('outputLog.args.nodeindex:', parseInt(outputLog[0].args.prevNodeIndex, 10));
+  inputCommitment.sibPath = {};
+  inputCommitment.pathIndex = {};
+
+  for (let i = 0; i < 31; i++) {
+    const j = 31 - i;
+    inputCommitment.sibPath[j] = {};
+    inputCommitment.pathIndex[j] = {};
+    if (outputLog[i].args.prevNodeIndex % 2 === 0) {
+      inputCommitment.sibPath[j] = outputLog[i].args.input[0].toString();
+      inputCommitment.pathIndex[j] = outputLog[i].args.prevNodeIndex - 1;
+    } else {
+      inputCommitment.sibPath[j] = outputLog[i].args.input[1].toString();
+      inputCommitment.pathIndex[j] = outputLog[i].args.prevNodeIndex + 1;
+    }
+  }
+  inputCommitment.sibPath[0] = {};
+  inputCommitment.sibPath[0] = outputLog[31].args.output.toString();
+  console.log('Root:', inputCommitment.sibPath[0]);
+  mimcTestingCommits.commitment.push(commitment);
+  mimcTestingCommits.commitment.sibPath.push(inputCommitment.sibPath);
+  mimcTestingCommits.commitment.pathIndex.push(inputCommitment.pathIndex);
+  console.log('Commits so far:', mimcTestingCommits);
+  return { inputCommitment };
 }
 
 /**
@@ -318,6 +355,9 @@ async function mint(amount, ownerPublicKey, salt, vkId, blockchainOptions, zokra
   });
   gasUsedStats(txReceipt, 'mint');
 
+  const commWithPath = getPath(txReceipt, commitment);
+
+  // LOOK HERE
   const newLeafLog = txReceipt.logs.filter(log => {
     return log.event === 'NewLeaf';
   });
@@ -329,7 +369,7 @@ async function mint(amount, ownerPublicKey, salt, vkId, blockchainOptions, zokra
   console.log('Mint output: [zA, zAIndex]:', commitment, commitmentIndex.toString());
   console.log('MINT COMPLETE\n');
   console.groupEnd();
-  return { commitment, commitmentIndex };
+  return { commitment, commitmentIndex, commWithPath };
 }
 
 /**
@@ -745,26 +785,17 @@ async function simpleFungibleBatchTransfer(
   }
 
   // Get the sibling-path from the token commitments (leaves) to the root. Express each node as an Element class.
-  inputCommitment.siblingPath = await merkleTree.getSiblingPath(
-    account,
-    fTokenShieldInstance,
-    inputCommitment.commitment,
-    inputCommitment.index,
-  );
+  const testIndex = mimcTestingCommits.commitment.indexOf(inputCommitment.commitment);
+  console.log('testIndex:', testIndex);
+  // console.log('1st sib path:', mimcTestingCommits.commitment.sibPath[1]);
+  console.log('Input commit:', inputCommitment.commitment);
+  inputCommitment.siblingPath = mimcTestingCommits.commitment.sibPath[testIndex];
 
   const root = inputCommitment.siblingPath[0];
-  // TODO: checkRoot() is not essential. It's only useful for debugging as we make iterative improvements to nightfall's zokrates files.  Although we only strictly need the root to be reconciled within zokrates, it's easier to check and intercept any errors in js; so we'll first try to reconcole here. Possibly delete in future.
-  merkleTree.checkRoot(
-    inputCommitment.commitment,
-    inputCommitment.index,
-    inputCommitment.siblingPath,
-    root,
-  );
 
-  inputCommitment.siblingPathElements = inputCommitment.siblingPath.map(
+  inputCommitment.siblingPathElements = Object.values(inputCommitment.siblingPath).map(
     nodeValue => new Element(nodeValue, 'field', config.NODE_HASHLENGTH * 8, 1),
   ); // we truncate to 216 bits - sending the whole 256 bits will overflow the prime field
-
   const publicInputHash = utils.concatenateThenHash(
     root,
     inputCommitment.nullifier,
@@ -1062,6 +1093,7 @@ export default {
   getBalance,
   getFTAddress,
   buyFToken,
+  getRoots,
   transferFToken,
   burnFToken,
   getTokenInfo,

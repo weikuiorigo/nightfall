@@ -47,7 +47,7 @@ contract MerkleTree is MiMC {
     event NewLeaf(uint leafIndex, bytes32 leafValue, bytes32 root);
     event NewLeaves(uint minLeafIndex, bytes32[] leafValues, bytes32 root);
 
-    event Output(bytes32[2] input, bytes32[1] output, uint nodeIndex, uint256 leafCount); // for debugging only
+    event Output(bytes32[2] input, bytes32[1] output, uint prevNodeIndex, uint nodeIndex); // for debugging only
 
     uint public treeHeight = 32; //change back to 32 after testing
     uint public treeWidth = 2 ** treeHeight; // 2 ** treeHeight
@@ -102,6 +102,7 @@ contract MerkleTree is MiMC {
 
         uint slot = getFrontierSlot(leafCount);
         uint nodeIndex = leafCount + treeWidth - 1;
+        uint prevNodeIndex;
         bytes32 nodeValue = leafValue; // nodeValue is the hash, which iteratively gets overridden to the top of the tree until it becomes the root.
 
         //bytes32 leftInput; //can remove these and just use input[0] input[1]
@@ -122,8 +123,9 @@ contract MerkleTree is MiMC {
 
                 output[0] = mimcHash2(input); // mimc hash of concatenation of each node
                 nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                prevNodeIndex = nodeIndex;
                 nodeIndex = (nodeIndex - 1) / 2; // move one row up the tree
-                emit Output(input, output, nodeIndex, leafCount); // for debugging only
+                emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
             } else {
                 // odd nodeIndex
                 //leftInput = nodeValue;
@@ -133,8 +135,9 @@ contract MerkleTree is MiMC {
 
                 output[0] = mimcHash2(input); // mimc hash of concatenation of each node
                 nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                prevNodeIndex = nodeIndex;
                 nodeIndex = nodeIndex / 2; // move one row up the tree
-                emit Output(input, output, nodeIndex, leafCount); // for debugging only
+                emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
             }
         }
 
@@ -176,6 +179,7 @@ contract MerkleTree is MiMC {
 
         uint slot;
         uint nodeIndex;
+        uint prevNodeIndex;
         bytes32 nodeValue;
 
         //bytes32 leftInput;
@@ -204,10 +208,11 @@ contract MerkleTree is MiMC {
                     input[0] = frontier[level - 1]; //replace with push?
                     input[1] = nodeValue;
                     output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                    //emit Output(input, output, nodeIndex, leafCount); // for debugging only
 
                     nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                    prevNodeIndex = nodeIndex;
                     nodeIndex = (nodeIndex - 1) / 2; // move one row up the tree
+                    emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
                 } else {
                     // odd nodeIndex
                     //leftInput = nodeValue;
@@ -215,10 +220,11 @@ contract MerkleTree is MiMC {
                     input[0] = nodeValue;
                     input[1] = zero;
                     output[0] = mimcHash2(input); // mimc hash of concatenation of each node
-                    //emit Output(input, output[0], level, nodeIndex); // for debugging only
 
                     nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                    prevNodeIndex = nodeIndex;
                     nodeIndex = nodeIndex / 2; // the parentIndex, but will become the nodeIndex of the next level
+                    emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
                 }
             }
             frontier[slot] = nodeValue; // store in frontier
@@ -236,9 +242,9 @@ contract MerkleTree is MiMC {
                 output[0] = mimcHash2(input); // mimc hash of concatenation of each node
 
                 nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                prevNodeIndex = nodeIndex;
                 nodeIndex = (nodeIndex - 1) / 2;  // the parentIndex, but will become the nodeIndex of the next level
-
-                //emit Output(input, output, nodeIndex, leafCount); // for debugging only
+                emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
             } else {
                 // odd nodeIndex
                 //leftInput = nodeValue;
@@ -248,9 +254,9 @@ contract MerkleTree is MiMC {
                 output[0] = mimcHash2(input); // mimc hash of concatenation of each node
 
                 nodeValue = output[0]; // the parentValue, but will become the nodeValue of the next level
+                prevNodeIndex = nodeIndex;
                 nodeIndex = nodeIndex / 2;  // the parentIndex, but will become the nodeIndex of the next level
-
-                //emit Output(input, output, nodeIndex, leafCount); // for debugging only
+                emit Output(input, output, prevNodeIndex, nodeIndex); // for debugging only
             }
 
         }

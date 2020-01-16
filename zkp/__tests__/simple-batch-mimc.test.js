@@ -1,6 +1,7 @@
 /* eslint-disable import/no-unresolved */
 // Testing batching with mimc integration (mainly for .code files) - no merkle-tree package
 
+import contract from 'truffle-contract';
 import utils from '../src/zkpUtils';
 import bc from '../src/web3';
 import controller from '../src/f-token-controller-MIMC-TESTING';
@@ -81,7 +82,7 @@ beforeAll(async () => {
   pkB = await Promise.all(pkB);
   S_A_C = await utils.rndHex(32);
   pkA = utils.strip0x(utils.hash(skA));
-  Z_A_C = utils.concatenateThenHash([C, pkA, S_A_C]);
+  Z_A_C = utils.concatenateThenHash(C, pkA, S_A_C);
 });
 
 // eslint-disable-next-line no-undef
@@ -90,11 +91,7 @@ describe('f-token-controller.js tests', () => {
   // Alice sends Bob E and gets F back (Bob has 40 ETH, Alice has 10 ETH)
   // Bob then has E+G at total of 70 ETH
   // Bob sends H to Alice and keeps I (Bob has 50 ETH and Alice has 10+20=30 ETH)
-
-<<<<<<< HEAD
   // MiMC - works
-=======
->>>>>>> renaming files and adding mimc versions for testing
   test('Should create 10000 tokens in accounts[0]', async () => {
     // fund some accounts with FToken
     const AMOUNT = 10000;
@@ -122,6 +119,9 @@ describe('f-token-controller.js tests', () => {
       },
     );
     zInd1 = parseInt(zIndex, 10);
+    console.log('salt:', S_A_C);
+    console.log('pkA:', pkA);
+    console.log('expected commitment:', Z_A_C);
     expect(Z_A_C).toEqual(zTest);
   });
 
@@ -160,7 +160,7 @@ describe('f-token-controller.js tests', () => {
     console.log('approx total cost in USD @$200/ETH was', wei * 200e-18);
     console.log('approx per transaction cost in USD @$200/ETH was', (wei * 200e-18) / 20);
   });
-
+  /*
   test('Should transfer a pair of the 20 ERC-20 commitments that have just been created', async () => {
     const c = '0x00000000000000000000000000000002';
     const d = '0x00000000000000000000000000000002';
@@ -193,5 +193,5 @@ describe('f-token-controller.js tests', () => {
         pkPath: `${process.cwd()}/code/gm17/ft-transfer/proving.key`,
       },
     );
-  });
+  });  */
 });
