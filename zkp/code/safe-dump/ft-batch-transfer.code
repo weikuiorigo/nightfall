@@ -178,8 +178,8 @@ def main(field publicInputHash, private field inputValue, private field[2] secre
 	field[256] shaHash = sha256of1024(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024])
 
 	// concatenate siblings and hash all the way up to the root using a MiMC hash
-  
 	field[128] orderBits = unpack128(order) // need to access an array of bits
+  //field mimcHash = pack256([0, 0, 0, ...shaHash[0..253]]) //fit the sha256 has into a MiMC hash for path computation by losing the 3 LSBs
   field mimcHash = pack256(shaHash) //<-correct input, wrong form? works
 
   for field i in 0..32 do

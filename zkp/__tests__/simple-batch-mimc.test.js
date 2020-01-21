@@ -133,7 +133,7 @@ describe('f-token-controller.js tests', () => {
     for (let i = 0; i < E.length; i++) {
       outputCommitments[i] = { value: E[i], salt: S_B_E[i] };
     }
-
+    console.log('This test requires fresh contracts if using a local MerkleTree');
     const response = await controller.simpleFungibleBatchTransfer(
       inputCommitment,
       outputCommitments,
@@ -193,5 +193,5 @@ describe('f-token-controller.js tests', () => {
         pkPath: `${process.cwd()}/code/gm17/ft-transfer/proving.key`,
       },
     );
-  });  */
+  }); */
 });

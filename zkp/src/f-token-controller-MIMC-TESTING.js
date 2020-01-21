@@ -43,6 +43,7 @@ MerkleTree.setProvider(Web3.connect());
 const shield = {}; // this field holds the current Shield contract instance.
 const mimcTestingCommits = [{}];
 mimcTestingCommits.commitment = [{}];
+mimcTestingCommits.commitment.index = [];
 mimcTestingCommits.commitment.sibPath = [{}];
 mimcTestingCommits.commitment.pathIndex = [{}];
 
@@ -95,35 +96,47 @@ async function getRoots(root) {
 }
 
 async function getPath(txReceipt, commitment) {
-  const inputCommitment = { commitment };
+  const inputCommitment = { commitment }; // Initialise object
   const outputLog = txReceipt.logs.filter(log => {
+    // listen for output logs (emitted at each hash calc)
     return log.event === 'Output';
   });
-  console.log('outputLog 1:', outputLog[0]);
-  // console.log('outputLog input[0]:', outputLog[0].args.input[0]);
-  console.log('outputLog.args.nodeindex:', parseInt(outputLog[0].args.prevNodeIndex, 10));
-  inputCommitment.sibPath = {};
-  inputCommitment.pathIndex = {};
+  // console.log('outputLog.args.nodeindex:', parseInt(outputLog[0].args.prevNodeIndex, 10));
+  inputCommitment.sibPath = {}; // Initialise path
+  inputCommitment.pathIndex = {}; // Initialise indexes
 
-  for (let i = 0; i < 31; i++) {
-    const j = 31 - i;
+  for (let i = 0; i < 32; i++) {
+    const j = 32 - i;
     inputCommitment.sibPath[j] = {};
     inputCommitment.pathIndex[j] = {};
+    // console.log('Output', i, outputLog[i].args.output.toString(), utils.hexToDec(outputLog[i].args.output.toString()),);
     if (outputLog[i].args.prevNodeIndex % 2 === 0) {
-      inputCommitment.sibPath[j] = outputLog[i].args.input[0].toString();
-      inputCommitment.pathIndex[j] = outputLog[i].args.prevNodeIndex - 1;
+      // if nodeIndex was even...
+      inputCommitment.sibPath[j] = outputLog[i].args.input[0].toString(); // left input was sibling, so store it...
+      inputCommitment.pathIndex[j] = parseInt(outputLog[i].args.prevNodeIndex, 10) - 1; // which has nodeIndex - 1
     } else {
+      // else, odd:
       inputCommitment.sibPath[j] = outputLog[i].args.input[1].toString();
-      inputCommitment.pathIndex[j] = outputLog[i].args.prevNodeIndex + 1;
+      inputCommitment.pathIndex[j] = parseInt(outputLog[i].args.prevNodeIndex, 10) + 1;
     }
   }
-  inputCommitment.sibPath[0] = {};
-  inputCommitment.sibPath[0] = outputLog[31].args.output.toString();
-  console.log('Root:', inputCommitment.sibPath[0]);
-  mimcTestingCommits.commitment.push(commitment);
-  mimcTestingCommits.commitment.sibPath.push(inputCommitment.sibPath);
-  mimcTestingCommits.commitment.pathIndex.push(inputCommitment.pathIndex);
-  console.log('Commits so far:', mimcTestingCommits);
+
+  inputCommitment.sibPath[0] = {}; // Initialise root
+  inputCommitment.pathIndex[0] = 0; // Final index
+  inputCommitment.sibPath[0] = outputLog[31].args.output.toString(); // Store root
+  console.log('Root:', inputCommitment.sibPath[0], utils.hexToDec(inputCommitment.sibPath[0]));
+  mimcTestingCommits.commitment.push(commitment); // Push commit to storage array (to be used below)
+  mimcTestingCommits.commitment.index.push(parseInt(outputLog[0].args.prevNodeIndex, 10)); // Push commit index ('')
+  mimcTestingCommits.commitment.sibPath.push(inputCommitment.sibPath); // Push path
+  mimcTestingCommits.commitment.pathIndex.push(inputCommitment.pathIndex); // Push path index
+  console.log(
+    'Commits so far:',
+    mimcTestingCommits,
+    'Indexes so far:',
+    mimcTestingCommits.commitment.pathIndex,
+    'Index of new commit:',
+    mimcTestingCommits.commitment.index,
+  );
   return { inputCommitment };
 }
 
@@ -454,37 +467,21 @@ async function transfer(
   );
 
   // Get the sibling-path from the token commitments (leaves) to the root. Express each node as an Element class.
-  inputCommitments[0].siblingPath = await merkleTree.getSiblingPath(
-    account,
-    fTokenShieldInstance,
-    inputCommitments[0].commitment,
-    inputCommitments[0].index,
-  );
-  inputCommitments[1].siblingPath = await merkleTree.getSiblingPath(
-    account,
-    fTokenShieldInstance,
-    inputCommitments[1].commitment,
-    inputCommitments[1].index,
-  );
+  const testIndex0 = mimcTestingCommits.commitment.indexOf(inputCommitments[0].commitment);
+  console.log('Input commit 1:', inputCommitments[0].commitment);
+  inputCommitments[0].siblingPath = mimcTestingCommits.commitment.sibPath[testIndex0];
+  console.log('Input commit index 1:', inputCommitments[0].index);
+
+  const testIndex1 = mimcTestingCommits.commitment.indexOf(inputCommitments[1].commitment);
+  console.log('Input commit 2:', inputCommitments[1].commitment);
+  inputCommitments[1].siblingPath = mimcTestingCommits.commitment.sibPath[testIndex1];
+  console.log('Input commit index 2:', inputCommitments[1].index);
+
+  const root = inputCommitments[0].siblingPath[0];
 
   // TODO: edit merkle-tree microservice API to accept 2 path requests at once, to avoid the possibility of the merkle-tree DB's root being updated between the 2 GET requests. Until then, we need to check that both paths share the same root with the below check:
   if (inputCommitments[0].siblingPath[0] !== inputCommitments[1].siblingPath[0])
     throw new Error("The sibling paths don't share a common root.");
-
-  const root = inputCommitments[0].siblingPath[0];
-  // TODO: checkRoot() is not essential. It's only useful for debugging as we make iterative improvements to nightfall's zokrates files. Possibly delete in future.
-  merkleTree.checkRoot(
-    inputCommitments[0].commitment,
-    inputCommitments[0].index,
-    inputCommitments[0].siblingPath,
-    root,
-  );
-  merkleTree.checkRoot(
-    inputCommitments[1].commitment,
-    inputCommitments[1].index,
-    inputCommitments[1].siblingPath,
-    root,
-  );
 
   inputCommitments[0].siblingPathElements = inputCommitments[0].siblingPath.map(
     nodeValue => new Element(nodeValue, 'field', config.NODE_HASHLENGTH * 8, 1),
@@ -786,10 +783,9 @@ async function simpleFungibleBatchTransfer(
 
   // Get the sibling-path from the token commitments (leaves) to the root. Express each node as an Element class.
   const testIndex = mimcTestingCommits.commitment.indexOf(inputCommitment.commitment);
-  console.log('testIndex:', testIndex);
-  // console.log('1st sib path:', mimcTestingCommits.commitment.sibPath[1]);
   console.log('Input commit:', inputCommitment.commitment);
   inputCommitment.siblingPath = mimcTestingCommits.commitment.sibPath[testIndex];
+  console.log('Input commit index:', inputCommitment.index);
 
   const root = inputCommitment.siblingPath[0];
 
@@ -801,7 +797,6 @@ async function simpleFungibleBatchTransfer(
     inputCommitment.nullifier,
     ...outputCommitments.map(item => item.commitment),
   );
-
   // compute the proof
   console.log('Computing witness...');
   const allInputs = formatInputsForZkSnark([
@@ -817,7 +812,7 @@ async function simpleFungibleBatchTransfer(
     ...outputCommitments.map(item => new Element(item.salt, 'field')),
     ...outputCommitments.map(item => new Element(item.commitment, 'field')),
     new Element(root, 'field', 256, 2), // we want 'all' of the root in one field (it's a MiMC hash) at this point, so we don't have to convert it to a single field in the dsl.
-  ]);
+  ]); // check MiMC is in hex string form
 
   console.log(
     'To debug witness computation, use ./zok to run up a zokrates container then paste these arguments into the terminal:',
@@ -872,6 +867,18 @@ async function simpleFungibleBatchTransfer(
   const newLeavesLog = txReceipt.logs.filter(log => {
     return log.event === 'NewLeaves';
   });
+
+  console.log(txReceipt);
+
+  const outputCommWithPath = {};
+  // get path for each output commitment by listening for blocks of 32 calculations up to the root
+  for (let i = 0; i < outputCommitments.length; i++) {
+    const txReceipti = txReceipt.logs.filter(log => {
+      return log.logIndex >> (32 * i - 1) && log.logIndex << (32 * i + 31);
+    });
+    outputCommWithPath[i] = getPath(txReceipti, outputCommitments[i]);
+  }
+
   const minOutputCommitmentIndex = parseInt(newLeavesLog[0].args.minLeafIndex, 10);
   const maxOutputCommitmentIndex = minOutputCommitmentIndex + outputCommitments.length - 1;
   console.groupEnd();
