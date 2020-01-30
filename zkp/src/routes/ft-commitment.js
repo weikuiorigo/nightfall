@@ -80,7 +80,6 @@ async function mint(req, res, next) {
 async function transfer(req, res, next) {
   const { address } = req.headers;
   const { inputCommitments, outputCommitments, receiver, sender } = req.body;
-  const vkId = await getVkId('TransferFToken');
   const {
     contractJson: fTokenShieldJson,
     contractInstance: fTokenShield,

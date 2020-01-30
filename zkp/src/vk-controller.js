@@ -36,29 +36,11 @@ async function initializeVks(vkRegistryContractName) {
   const vkPaths = config.VK_PATHS[vkRegistryContractName];
   const vkDescriptions = Object.keys(vkPaths);
   try {
-    for (const vkDescription of vkDescriptions) {
-      // aritificial enum:
-      let txTypeEnumUint;
-      switch (vkDescription) {
-        case 'mint':
-          txTypeEnumUint = 0;
-          break;
-        case 'transfer':
-          txTypeEnumUint = 1;
-          break;
-        case 'burn':
-          txTypeEnumUint = 2;
-          break;
-        case 'simpleBatchTransfer':
-          txTypeEnumUint = 3;
-          break;
-        default:
-          txTypeEnumUint = 4; // intentionally set an invalid enumUint that will fail (because currently only enums 0,1,2,3 exist in the shield contracts) in order to save users gas.
-          break;
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await vks.loadVk(txTypeEnumUint, vkPaths[vkDescription], blockchainOptions);
-    }
+    await Promise.all(
+      vkDescriptions.map(vkDescription => {
+        return vks.loadVk(vkDescription, vkPaths[vkDescription], blockchainOptions);
+      }),
+    );
   } catch (err) {
     throw new Error('Error while loading verification keys', err);
   }

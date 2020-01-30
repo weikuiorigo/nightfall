@@ -100,9 +100,3 @@ build-test
 !**/*.zok
 # We want to keep ft-burn.code, but not out.code
 **/out.code
-<<<<<<< HEAD
-**/vkIds.json
-=======
-**/safe-dump/**
-!**/safe-dump/README.md
->>>>>>> perf: remove verifier registry & vkid's
