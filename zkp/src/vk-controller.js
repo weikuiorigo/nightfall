@@ -14,26 +14,29 @@ const web3 = Web3.connection();
 
 /**
  * Loads VKs to the VkRegistry (Shield contracts)
- * @param {string} vkRegistryContractName The vkRegistry is just the contract which stores the verification keys. In our case, that's the FTokenShield.sol and NFTokenShield.sol contracts.
+ * @param {string} shieldContractName The vkRegistry is just the contract which stores the verification keys. In our case, that's the FTokenShield.sol and NFTokenShield.sol contracts.
  */
-async function initializeVks(vkRegistryContractName) {
+async function initializeVks(shieldContractName) {
   const accounts = await web3.eth.getAccounts();
   const account = accounts[0];
 
   // Get vkRegistry contract details. The vkRegistry is just the contract which stores the verification keys. In our case, that's the FTokenShield.sol and NFTokenShield.sol contracts.
   const {
-    contractJson: vkRegistryJson,
-    contractInstance: vkRegistry,
-  } = await getTruffleContractInstance(vkRegistryContractName);
+    contractJson: shieldJson,
+    contractInstance: shieldContract,
+  } = await getTruffleContractInstance(shieldContractName);
+
+  // console.log('vkRegistryJson', vkRegistryJson);
+  // console.log('vkRegistry', vkRegistry);
 
   const blockchainOptions = {
-    vkRegistryJson,
-    vkRegistryAddress: vkRegistry.address,
+    shieldJson,
+    shieldAddress: shieldContract.address,
     account,
   };
 
   // Load VK to the vkRegistry
-  const vkPaths = config.VK_PATHS[vkRegistryContractName];
+  const vkPaths = config.VK_PATHS[shieldContractName];
   const vkDescriptions = Object.keys(vkPaths);
   try {
     await Promise.all(

@@ -40,6 +40,7 @@ app.use('/', ftCommitmentRoutes);
 app.use('/', ftRoutes);
 app.use('/', nftRoutes);
 
+// Provide Nightlite with a provider.
 provider.connect();
 
 app.route('/vk').post(async function runVkController(req, res, next) {
