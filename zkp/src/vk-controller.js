@@ -26,9 +26,6 @@ async function initializeVks(shieldContractName) {
     contractInstance: shieldContract,
   } = await getTruffleContractInstance(shieldContractName);
 
-  // console.log('vkRegistryJson', vkRegistryJson);
-  // console.log('vkRegistry', vkRegistry);
-
   const blockchainOptions = {
     shieldJson,
     shieldAddress: shieldContract.address,
