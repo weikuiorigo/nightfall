@@ -3,6 +3,16 @@ import "hashes/sha256/1024bit.code" as sha256of1024
 import "hashes/sha256/512bit.code" as sha256of512
 import "utils/pack/unpack128.code" as unpack128
 import "utils/pack/nonStrictUnpack256.code" as unpack256
+<<<<<<< HEAD:zkp/.yalc/@eyblockchain/nightlite/setup/gm17/ft-transfer.code
+=======
+import "../common/el-gamal3.zok" as enc3
+import "hashes/sha256/IVconstants.code" as IVconstants
+import "hashes/sha256/shaRoundNoBoolCheck.code" as sha256
+import "../common/order-fields.zok" as orderFields
+import "../common/mimc-hash-2.zok" as mimc2
+import "../common/edwards-compress.zok" as edwardsCompress
+import "utils/pack/pack256.code" as pack256
+>>>>>>> feat(zkp): added Edwards compression to public input points:zkp/code/gm17/ft-transfer/ft-transfer.code
 
 def concatenate128x256x256(field[128] a, field[256] b, field[256] c)->(field[640]):
 	return [...a, ...b, ...c]
@@ -13,11 +23,33 @@ def concatenate256x256(field[256] a, field[256] b)->(field[512]):
 def concatenate256x256x256x256x256(field[256] a, field[256] b, field[256] c, field[256] d, field[256] e)->(field[1280]):
 	return [...a, ...b, ...c, ...d, ...e]
 
+<<<<<<< HEAD:zkp/.yalc/@eyblockchain/nightlite/setup/gm17/ft-transfer.code
 def orderedConcatenate216x216(field order, field[216] a, field[216] b)->(field[432]):
 	field[216] left = if order==0 then b else a fi
 	field[216] right = if order==0 then a else b fi
 	return [...left, ...right]
 
+=======
+def concatenate13xx256(field[13][256] a)->(field[3328]):
+  return [...a[0], ...a[1], ...a[2], ...a[3], ...a[4], ...a[5], ...a[6], ...a[7], ...a[8], ...a[9], ...a[10], ...a[11], ...a[12]]
+
+def orderedConcatenate216x216(field order, field[216] pathNode, field[216] siblingNode)->(field[432]):
+	field[216] left = if order == 0 then pathNode else siblingNode fi
+	field[216] right = if order == 0 then siblingNode else pathNode fi
+	return [...left, ...right]
+
+def sha256of3584(field[256] a0, field[256] a1, field[256] a2, field[256] a3, field[256] a4, field[256] a5, field[256] a6, field[256] a7, field[256] a8, field[256] a9, field[256] a10, field[256] a11, field[256] a12, field[256] a13) -> (field[256]):
+    IV =  IVconstants()
+    digest1 =  sha256(a0, a1, IV)
+    digest2 =  sha256(a2, a3, digest1)
+    digest3 =  sha256(a4, a5, digest2)
+    digest4 =  sha256(a6, a7, digest3)
+    digest5 =  sha256(a8, a9, digest4)
+    digest6 =  sha256(a10, a11, digest5)
+    digest7 =  sha256(a12, a13, digest6)
+    return digest7
+
+>>>>>>> feat(zkp): added Edwards compression to public input points:zkp/code/gm17/ft-transfer/ft-transfer.code
 def shaPad432To512(field[432] a)->(field[512]):
 	return [...a, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,1,0,1,1,0,0,0,0]
 
@@ -41,10 +73,16 @@ def shaPad640To1024()->(field[384]):
 def shaPad1280To1536()->(field[256]):
 	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	1,	0,	0,	0,	0,	0,	0,	0,	0]
 
+<<<<<<< HEAD:zkp/.yalc/@eyblockchain/nightlite/setup/gm17/ft-transfer.code
 // unpacks the bits in a path field ready for sha-ing
 def unpackPath(field p)->(field[216]):
 	field[256] sister = unpack256(p)
 	return sister[40..256]
+=======
+// Provides the padding (only!) for a sha256of3584-bit message.
+def shaPad3328To3584()->(field[256]):
+  return [1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0]
+>>>>>>> feat(zkp): added Edwards compression to public input points:zkp/code/gm17/ft-transfer/ft-transfer.code
 
 
 // Inputs for main are:
@@ -147,6 +185,10 @@ def main(field publicInputHash, private field valueC, private field secretKeyAHi
 	field[256] padding768To1024 = shaPad768To1024()
 	field[384] padding640To1024 = shaPad640To1024()
 	field[256] padding1280To1536 = shaPad1280To1536()
+<<<<<<< HEAD:zkp/.yalc/@eyblockchain/nightlite/setup/gm17/ft-transfer.code
+=======
+	field[256] padding3328To3584 = shaPad3328To3584()
+>>>>>>> feat(zkp): added Edwards compression to public input points:zkp/code/gm17/ft-transfer/ft-transfer.code
 
 
 
@@ -245,11 +287,30 @@ def main(field publicInputHash, private field valueC, private field secretKeyAHi
 
 
 	// Check that the 'public inputs' hash to the publicInputHash:
+<<<<<<< HEAD:zkp/.yalc/@eyblockchain/nightlite/setup/gm17/ft-transfer.code
 	field[1280] preimage1280 = concatenate256x256x256x256x256(rootBits, nullifierCBits, nullifierDBits, commitmentEBits, commitmentFBits)
 
 	field[256] publicInputHashBitsCheck = sha256of1536(preimage1280[0..256], preimage1280[256..512], preimage1280[512..768], preimage1280[768..1024], preimage1280[1024..1280], padding1280To1536[0..256])
 
 	publicInputHashBits[8..256] == publicInputHashBitsCheck[8..256]
 
+=======
+	// To make the hash smaller, let's 'compress' each curve point ordered pair into a single 256 bit array (rather than two)...
+	field[256] compressedEncryptionBits1 = edwardsCompress(encryption[0], encryption[1])
+	field[256] compressedEncryptionBits2 = edwardsCompress(encryption[2], encryption[3])
+	field[256] compressedEncryptionBits3 = edwardsCompress(encryption[4], encryption[5])
+	field[256] compressedEncryptionBits4 = edwardsCompress(encryption[6], encryption[7])
+	field[256] compressedAuthorityPublicKeyBits1 = edwardsCompress(authorityPublicKey1[0], authorityPublicKey1[1])
+	field[256] compressedAuthorityPublicKeyBits2 = edwardsCompress(authorityPublicKey2[0], authorityPublicKey2[1])
+	field[256] compressedAuthorityPublicKeyBits3 = edwardsCompress(authorityPublicKey3[0], authorityPublicKey3[1])
+  // ...this saves four stages of sha hashing so about 100k constraints minus the work to do the compression
+	field[3328] preimage3328 = concatenate13xx256([rootBits, nullifierCBits, nullifierDBits, commitmentEBits, commitmentFBits, unpack256(publicKeyRoot), compressedEncryptionBits1, compressedEncryptionBits2, compressedEncryptionBits3, compressedEncryptionBits4, compressedAuthorityPublicKeyBits1, compressedAuthorityPublicKeyBits2, compressedAuthorityPublicKeyBits3])
+
+	field[256] publicInputHashBitsCheck = sha256of3584(preimage3328[0..256], preimage3328[256..512], preimage3328[512..768], preimage3328[768..1024], preimage3328[1024..1280], preimage3328[1280..1536], preimage3328[1536..1792], preimage3328[1792..2048], preimage3328[2048..2304], preimage3328[2304..2560], preimage3328[2560..2816], preimage3328[2816..3072], preimage3328[3072..3328], padding3328To3584)
+
+	publicInputHashBits[8..256] == publicInputHashBitsCheck[8..256]
+
+	//field[8] ret = [pack256(compressedEncryptionBits1), pack256(compressedEncryptionBits2), pack256(compressedEncryptionBits3), pack256(compressedEncryptionBits4), pack256(compressedAuthorityPublicKeyBits1), pack256(compressedAuthorityPublicKeyBits2), pack256(compressedAuthorityPublicKeyBits3), pack256(publicInputHashBitsCheck)]
+>>>>>>> feat(zkp): added Edwards compression to public input points:zkp/code/gm17/ft-transfer/ft-transfer.code
 
 	return

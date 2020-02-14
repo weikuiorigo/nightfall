@@ -2,7 +2,11 @@
   "name": "@eyblockchain/nightlite",
   "description": "Minimal required library for the Nightfall protocol",
   "license": "MIT",
+<<<<<<< HEAD
   "version": "0.0.0-2279c595",
+=======
+  "version": "0.0.0-f944e5f6",
+>>>>>>> feat(zkp): added Edwards compression to public input points
   "scripts": {
     "start": "node build/index.js",
     "dev": "nodemon build/index.js",
@@ -12,7 +16,7 @@
     "lint:md": "markdownlint -i node_modules -i build .",
     "validate": "cod-scripts validate",
     "lint:sol": "solium -d contracts",
-    "test": "docker-compose exec zkp jest --verbose --runInBand ./__tests__/*.test.js"
+    "test": "jest --verbose --runInBand ./__tests__/*.test.js"
   },
   "dependencies": {
     "@eyblockchain/zokrates.js": "^1.2.0",
