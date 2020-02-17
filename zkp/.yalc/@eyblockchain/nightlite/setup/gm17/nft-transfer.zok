@@ -1,11 +1,7 @@
-import "hashes/sha256/1536bit.code" as sha256of1536
 import "hashes/sha256/1024bit.code" as sha256of1024
 import "hashes/sha256/512bit.code" as sha256of512
 import "utils/pack/unpack128.code" as unpack128
 import "utils/pack/nonStrictUnpack256.code" as unpack256
-
-def concatenate256x256x256x256(field[256] a, field[256] b, field[256] c, field[256] d)->(field[1024]):
-	return [...a, ...b, ...c, ...d]
 
 def concatenate256x256x256(field[256] a, field[256] b, field[256] c)->(field[768]):
 	return [...a, ...b, ...c]
@@ -13,9 +9,9 @@ def concatenate256x256x256(field[256] a, field[256] b, field[256] c)->(field[768
 def concatenate256x256(field[256] a, field[256] b)->(field[512]):
 	return [...a, ...b]
 
-def orderedConcatenate216x216(field order, field[216] a, field[216] b)->(field[432]):
-	field[216] left = if order==0 then b else a fi
-	field[216] right = if order==0 then a else b fi
+def orderedConcatenate216x216(field order, field[216] pathNode, field[216] siblingNode)->(field[432]):
+	field[216] left = if order == 0 then pathNode else siblingNode fi
+	field[216] right = if order == 0 then siblingNode else pathNode fi
 	return [...left, ...right]
 
 def shaPad432To512(field[432] a)->(field[512]):
@@ -33,57 +29,61 @@ def shaPad512To1024()->(field[512]):
 def shaPad768To1024()->(field[256]):
 	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	1,	0,	0,	0,	0,	0,	0,	0,	0]
 
-// Provides the padding (only!) for a 1024-bit message.
-def shaPad1024To1536()->(field[512]):
-	return [1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,  0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0]
-
-// Unpacks the bits in a path field ready for sha-ing
-def unpackPath(field p)->(field[216]):
-	field[256] sister = unpack256(p)
-	return sister[40..256]
+// unpacks a siblingPath's node to bits, ready for sha-ing:
+def unpackSiblingNode(field siblingNode)->(field[216]):
+	field[256] siblingNodeBits = unpack256(siblingNode)
+	return siblingNodeBits[40..256]
 
 
 // Inputs for main are:
-
-// payTo - the public Ethereum address to which the burned tokens get paid
 // asset - the tokenId of the ERC-721 token
-// secretKey - the secret key of the spender
-// salt - the salt for the commitment being spent
-// path - the Merkle path for the commitment being spent
-// nullifier - the nullifier for the commitment being spent
-// root - the Merkle root
-
-// publicInputHash = hash(root, nullifier, asset, payTo)
+// siblingPath - the sibling-path from the commitmentA (being spent) to the root of the merkle tree
+// root - the merkle root
+// nullifier - nullifier of the commitment being spent
+// publicKeyB - public key of Bob; the recipient of the asset
+// saltA - salt for Alice's commitment being spent
+// saltB - salt for the commitment being created for the recipient Bob
+// secretKeyA - secret key of Alice
+// commitmentB - the commitment being created the recipient Bob
+// publicInputHash = hash(root, nullifier, commitmentB)
 
 // Note - we now use 216 bits for the Merkle tree calculation. This is because 432 is the biggest input we can use for sha256 if we want 432/2 to end on a byte boundary for easier Solidity computation without needing to do full rounds and we need to concatenate the two child hashes. We consider 216 bits to be sufficiently secure. The nullifier, commitment and root retain 256-bit security.
 
 // Each field element passed to main() can be at most 128bits, to make use of unpack128() so most variables occupy two fields (except the publicInputHash, which we maximize as 248-bits)
 
-def main(field publicInputHash, private field payToHigh, private field payToLow, private field assetHigh, private field assetLow, private field  secretKeyHigh, private field secretKeyLow, private field saltHigh, private field  saltLow, private field[32] path, private field order, private field nullifierHigh, private field nullifierLow, private field rootHigh, private field rootLow)->():
+def main(field publicInputHash, private field assetHigh, private field assetLow, private field[32] siblingPath, private field order, private field nullifierHigh, private field nullifierLow, private field publicKeyBHigh, private field publicKeyBLow, private field  saltAHigh, private field saltALow, private field saltBHigh, private field  saltBLow, private field secretKeyAHigh, private field secretKeyALow, private field rootHigh, private field rootLow, private field commitmentBHigh, private field commitmentBLow)->():
 
-	//Unpack the inputs of main() to 128 bits. We'll unpack each field to its own 128 bit string for simplicity for now. Later efficiencies could be made by grouping some inputs.
+	// Unpack the inputs of main() to 128 bits. We'll unpack each field to its own 128 bit strings for simplicity for now. Later efficiencies could be made by grouping some inputs.
 
 	field[256] publicInputHashBits = unpack256(publicInputHash)
-
-	field[128] payToHighBits = unpack128(payToHigh)
-	field[128] payToLowBits = unpack128(payToLow)
-	field[256] payToBits = [...payToHighBits, ...payToLowBits]
 
 	field[128] assetHighBits = unpack128(assetHigh) //this may seem long-winded but ZoKrates needs intermediate variables for now
 	field[128] assetLowBits = unpack128(assetLow)
 	field[256] assetBits = [...assetHighBits, ...assetLowBits]
 
-	field[128] secretKeyHighBits = unpack128(secretKeyHigh)
-	field[128] secretKeyLowBits = unpack128(secretKeyLow)
-	field[256] secretKeyBits = [...secretKeyHighBits, ...secretKeyLowBits]
+	field[128] secretKeyAHighBits = unpack128(secretKeyAHigh)
+	field[128] secretKeyALowBits = unpack128(secretKeyALow)
+	field[256] secretKeyABits = [...secretKeyAHighBits, ...secretKeyALowBits]
 
-	field[128] saltHighBits = unpack128(saltHigh)
-	field[128] saltLowBits = unpack128(saltLow)
-	field[256] saltBits = [...saltHighBits, ...saltLowBits]
+	field[128] saltBHighBits = unpack128(saltBHigh)
+	field[128] saltBLowBits = unpack128(saltBLow)
+	field[256] saltBBits = [...saltBHighBits, ...saltBLowBits]
+
+	field[128] saltAHighBits = unpack128(saltAHigh)
+	field[128] saltALowBits = unpack128(saltALow)
+	field[256] saltABits = [...saltAHighBits, ...saltALowBits]
 
 	field[128] nullifierHighBits = unpack128(nullifierHigh)
 	field[128] nullifierLowBits = unpack128(nullifierLow)
 	field[256] nullifierBits = [...nullifierHighBits, ...nullifierLowBits]
+
+	field[128] publicKeyBHighBits = unpack128(publicKeyBHigh)
+	field[128] publicKeyBLowBits = unpack128(publicKeyBLow)
+	field[256] publicKeyBBits = [...publicKeyBHighBits, ...publicKeyBLowBits]
+
+	field[128] commitmentBHighBits = unpack128(commitmentBHigh)
+	field[128] commitmentBLowBits = unpack128(commitmentBLow)
+	field[256] commitmentBBits = [...commitmentBHighBits, ...commitmentBLowBits]
 
 	field[128] rootHighBits = unpack128(rootHigh)
 	field[128] rootLowBits = unpack128(rootLow)
@@ -95,52 +95,56 @@ def main(field publicInputHash, private field payToHigh, private field payToLow,
 	field[256] padding256To512 = shaPad256To512()
 	field[512] padding512To1024 = shaPad512To1024()
 	field[256] padding768To1024 = shaPad768To1024()
-	field[512] padding1024To1536 = shaPad1024To1536()
 
 
-	// First we construct a proof that the nullifier is correct.
-	// Concatenate salt|secretKey.
+	// H(saltA|secretKeyA) = nullifier.
 
-	field[512] preimage512 = concatenate256x256(saltBits, secretKeyBits)
-
+	field[512] preimage512 = concatenate256x256(saltABits, secretKeyABits)
 	field[256] nullifierBitsCheck = sha256of1024(preimage512[0..256], preimage512[256..512], padding512To1024[0..256], padding512To1024[256..512])
 
 
+	// H(asset|publicKeyA|saltA) = commitmentA is in the Merkle Tree
 
-	// Prove that the commitment is in the Merkle tree
-
-	// First, calculate Alice's public key from her private key: publicKey = H(secretKey).
-
-	field[256] publicKeyBits = sha256of512(secretKeyBits, padding256To512)
+	// Calculation of publicKeyA from H(secretKeyA)
+	field[256] publicKeyABits = sha256of512(secretKeyABits, padding256To512)
 
 
-	// Next calculate the commitment = H(asset|publicKey|salt)
+	// And calculation of the commitment
+	field[768] preimage768 = concatenate256x256x256(assetBits, publicKeyABits, saltABits)
 
-	field[768] preimage768 = concatenate256x256x256(assetBits, publicKeyBits, saltBits)
-
-	field[256] hash = sha256of1024(preimage768[0..256], preimage768[256..512], preimage768[512..768], padding768To1024) // commitment
+	field[256] hash = sha256of1024(preimage768[0..256], preimage768[256..512], preimage768[512..768], padding768To1024) // commitmentA
 
 	// concatenate siblings and hash all the way up to the root:
 	for field i in 0..32 do
 		field j = 31-i
-		preimage512 = shaPad432To512(orderedConcatenate216x216(orderBits[j], hash[40..256], unpackPath(path[j])))
+		field k = 127-i
+		preimage512 = shaPad432To512(orderedConcatenate216x216(orderBits[k], hash[40..256], unpackSiblingNode(siblingPath[j])))
 		hash = sha256of512(preimage512[0..256], preimage512[256..512])
-  endfor
+	endfor
 	// save the computed root:
 	field[256] rootBitsCheck = hash
 
-	// Now test the proofs
+	// Know asset|publicKeyB|saltB such that H(asset|publicKeyB|saltB) = commitmentB
+
+	preimage768 = concatenate256x256x256(assetBits, publicKeyBBits, saltBBits)
+
+	field[256] commitmentBBitsCheck = sha256of1024(preimage768[0..256], preimage768[256..512], preimage768[512..768], padding768To1024) // commitmentB
+
+
+	//check proofs
 
 	nullifierBits == nullifierBitsCheck
+
 	rootBits == rootBitsCheck
+
+	commitmentBBits == commitmentBBitsCheck
 
 
 	// Check that the 'public inputs' hash to the publicInputHash:
-	// (This also intertwines the 'payTo' input into the proof)
 
-	field[1024] preimage1024 = concatenate256x256x256x256(rootBits, nullifierBits, assetBits, payToBits)
+	preimage768 = concatenate256x256x256(rootBits, nullifierBits, commitmentBBits)
 
-	field[256] publicInputHashBitsCheck = sha256of1536(preimage1024[0..256], preimage1024[256..512], preimage1024[512..768], preimage1024[768..1024], padding1024To1536[0..256], padding1024To1536[256..512])
+	field[256] publicInputHashBitsCheck = sha256of1024(preimage768[0..256], preimage768[256..512], preimage768[512..768], padding768To1024)
 
 	publicInputHashBits[8..256] == publicInputHashBitsCheck[8..256]
 
