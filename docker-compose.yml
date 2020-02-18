@@ -187,7 +187,7 @@ services:
       - nightfall_network
 
   merkle-tree:
-    image: eyblockchain/timber
+    image: eyblockchain/timber:v1.3.0
     restart: on-failure
     depends_on:
       - mongo-merkle-tree
