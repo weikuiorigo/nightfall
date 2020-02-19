@@ -1,5 +1,4 @@
 import { UserService, BlacklistService } from '../business';
-import { setDB } from '../middlewares';
 
 /**
  * This function will create or get mongo db connection

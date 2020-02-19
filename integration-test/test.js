@@ -462,9 +462,31 @@ describe('****** Integration Test ******\n', function() {
     });
     context(`${bob.name} tasks: `, function() {
       /*
-       * This acts as a delay, which is needed to ensure that the recipient will be able to receive transferred data through Whisper.
+       *  Mint ERC-20 helper token commitment, so that bob publickey is added to public-key-tree contract
        */
-      before(done => setTimeout(done, 10000));
+      before(done => {
+        request
+          .post('/mintFToken')
+          .use(prefix(apiServerURL))
+          .send({
+            value: erc20.mint,
+          })
+          .set('Accept', 'application/json')
+          .set('Authorization', bob.token)
+          .end((err, res) => {
+            if (err) return done(err);
+            request
+              .post('/mintFTCommitment')
+              .use(prefix(apiServerURL))
+              .send({ outputCommitments: [erc20Commitments.mint[0]] })
+              .set('Accept', 'application/json')
+              .set('Authorization', bob.token)
+              .end(err => {
+                if (err) return done(err);
+                return done();
+              });
+          });
+      });
       /*
        * Step 14.
        * Burn ERC-20 Commitment.

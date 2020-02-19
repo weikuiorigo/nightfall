@@ -7,7 +7,7 @@ const requestWrapper = options =>
   new Promise(function promiseHandler(resolve, reject) {
     request(options, function responseHandler(err, res, body) {
       if (err || res.statusCode !== 200) {
-        return reject(err || res.body);
+        return reject(err || res.body.error);
       }
       return resolve(body.data);
     });

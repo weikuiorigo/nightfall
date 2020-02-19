@@ -2,7 +2,7 @@
   "name": "@eyblockchain/nightlite",
   "description": "Minimal required library for the Nightfall protocol",
   "license": "MIT",
-  "version": "0.0.0-4e5d4ae5",
+  "version": "0.0.0-b6c2c314",
   "scripts": {
     "start": "node build/index.js",
     "dev": "nodemon build/index.js",
@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "@eyblockchain/zokrates.js": "^1.2.0",
-    "@truffle/contract": "^4.0.15",
     "big-integer": "^1.6.48",
     "config": "^3.2.2",
     "hex-to-binary": "^1.0.1",
     "jsonfile": "^5.0.0",
     "request": "^2.88.0",
     "safe-buffer": "^5.2.0",
+    "truffle-contract": "^4.0.15",
     "web3": "1.0.0-beta.36",
     "winston": "^3.2.1"
   },
