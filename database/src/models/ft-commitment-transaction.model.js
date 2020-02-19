@@ -2,56 +2,73 @@ import { Schema } from 'mongoose';
 
 export default new Schema(
   {
-    type: {
+    transactionType: {
       type: String,
-      enum: ['minted', 'transferred', 'received', 'burned', 'change'],
-      required: true,
-    },
-    coin_value: {
-      type: String,
-      required: true,
-    },
-    salt: {
-      type: String,
-      required: true,
-    },
-    coin_commitment: {
-      type: String,
-      index: true,
-      required: true,
-    },
-    coin_commitment_index: {
-      type: Number,
+      enum: ['mint', 'transfer_outgoing', 'transfer_incoming', 'change', 'burn'],
       required: true,
     },
 
-    // incase transfer log only
-    used_coin_commitments: [
+    inputCommitments: [
       {
-        coin_value: String,
-        coin_commitment: String,
+        value: {
+          type: String,
+          required: true,
+        },
+        salt: {
+          type: String,
+          required: true,
+        },
+        commitment: {
+          type: String,
+          index: true,
+          required: true,
+        },
+        commitmentIndex: {
+          type: Number,
+          required: true,
+        },
+        owner: {
+          name: String,
+          publicKey: String,
+        },
       },
     ],
 
-    // receiver info
-    receiver: String,
+    outputCommitments: [
+      {
+        value: {
+          type: String,
+          required: true,
+        },
+        salt: {
+          type: String,
+          required: true,
+        },
+        commitment: {
+          type: String,
+          index: true,
+          required: true,
+        },
+        commitmentIndex: {
+          type: Number,
+          required: true,
+        },
+        owner: {
+          name: String,
+          publicKey: String,
+        },
+      },
+    ],
 
-    // coin info transferred to receiver
-    transferred_coin_value: String,
-    transferred_salt: String,
-    transferred_coin_commitment: String,
-    transferred_coin_commitment_index: String,
-
-    // coin info of change got from transfer
-    change_coin_value: String,
-    change_salt: String,
-    change_coin_ommitment: String,
-    change_coin_commitment_index: Number,
-  },
-  {
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
+    sender: {
+      publicKey: String,
+      name: String,
+    },
+    receiver: {
+      publicKey: String,
+      name: String,
+      address: String,
     },
   },
+  { timestamps: true },
 );

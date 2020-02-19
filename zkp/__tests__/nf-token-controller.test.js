@@ -1,9 +1,10 @@
 /* eslint-disable import/no-unresolved */
 
+import { erc721 } from '@eyblockchain/nightlite';
 import utils from '../src/zkpUtils';
 import bc from '../src/web3';
 import controller from '../src/nf-token-controller';
-import { getVkId, getContract } from '../src/contractUtils';
+import { getTruffleContractInstance } from '../src/contractUtils';
 
 jest.setTimeout(7200000);
 
@@ -33,7 +34,7 @@ let nfTokenShieldAddress;
 beforeAll(async () => {
   if (!(await bc.isConnected())) await bc.connect();
   accounts = await (await bc.connection()).eth.getAccounts();
-  const { contractJson, contractInstance } = await getContract('NFTokenShield');
+  const { contractJson, contractInstance } = await getTruffleContractInstance('NFTokenShield');
   nfTokenShieldAddress = contractInstance.address;
   nfTokenShieldJson = contractJson;
   A = await utils.rndHex(32);
@@ -85,15 +86,19 @@ describe('nf-token-controller.js tests', () => {
   });
 
   test('Should mint an ERC 721 commitment for Alice for asset A  (Z_A_A)', async () => {
-    const { commitment: zTest, commitmentIndex: zIndex } = await controller.mint(
+    const { commitment: zTest, commitmentIndex: zIndex } = await erc721.mint(
       A,
       pkA,
       S_A_A,
-      await getVkId('MintNFToken'),
       {
         account: accounts[0],
         nfTokenShieldJson,
         nfTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/nft-mint/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/nft-mint`,
+        pkPath: `${process.cwd()}/code/gm17/nft-mint/proving.key`,
       },
     );
     zIndA = parseInt(zIndex, 10);
@@ -101,15 +106,19 @@ describe('nf-token-controller.js tests', () => {
   });
 
   test('Should mint an ERC 721 commitment for Alice for asset G (Z_A_G)', async () => {
-    const { commitment: zTest, commitmentIndex: zIndex } = await controller.mint(
+    const { commitment: zTest, commitmentIndex: zIndex } = await erc721.mint(
       G,
       pkA,
       S_A_G,
-      await getVkId('MintNFToken'),
       {
         account: accounts[0],
         nfTokenShieldJson,
         nfTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/nft-mint/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/nft-mint`,
+        pkPath: `${process.cwd()}/code/gm17/nft-mint/proving.key`,
       },
     );
     zIndG = parseInt(zIndex, 10);
@@ -117,7 +126,7 @@ describe('nf-token-controller.js tests', () => {
   });
 
   test('Should transfer the ERC 721 commitment Z_A_A from Alice to Bob, creating Z_B_A', async () => {
-    const { outputCommitment } = await controller.transfer(
+    const { outputCommitment } = await erc721.transfer(
       A,
       pkB,
       S_A_A,
@@ -125,18 +134,22 @@ describe('nf-token-controller.js tests', () => {
       skA,
       Z_A_A,
       zIndA,
-      await getVkId('TransferNFToken'),
       {
         account: accounts[0],
         nfTokenShieldJson,
         nfTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/nft-transfer/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/nft-transfer`,
+        pkPath: `${process.cwd()}/code/gm17/nft-transfer/proving.key`,
       },
     );
     expect(outputCommitment).toEqual(Z_B_A);
   });
 
   test('Should transfer the ERC 721 commitment Z_A_G from Alice to Bob, creating Z_B_G', async () => {
-    const { outputCommitment } = await controller.transfer(
+    const { outputCommitment } = await erc721.transfer(
       G,
       pkB,
       S_A_G,
@@ -144,32 +157,39 @@ describe('nf-token-controller.js tests', () => {
       skA,
       Z_A_G,
       zIndG,
-      await getVkId('TransferNFToken'),
       {
         account: accounts[0],
         nfTokenShieldJson,
         nfTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/nft-transfer/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/nft-transfer`,
+        pkPath: `${process.cwd()}/code/gm17/nft-transfer/proving.key`,
       },
     );
     expect(outputCommitment).toEqual(Z_B_G);
   });
 
   test('Should burn the ERC 721 commitment for Bob for asset Z_B_A to return A ERC-721 Token', async () => {
-    const commitment = await controller.burn(
+    await erc721.burn(
       A,
       skB,
       sAToBA,
       Z_B_A,
       zIndA + 2,
-      await getVkId('BurnNFToken'),
       {
         account: accounts[0],
         tokenReceiver: accounts[2],
         nfTokenShieldJson,
         nfTokenShieldAddress,
       },
+      {
+        codePath: `${process.cwd()}/code/gm17/nft-burn/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/nft-burn`,
+        pkPath: `${process.cwd()}/code/gm17/nft-burn/proving.key`,
+      },
     );
-    expect(Z_B_A).toEqual(commitment);
     expect((await controller.getOwner(A, '')).toLowerCase()).toEqual(accounts[2].toLowerCase());
   });
 });

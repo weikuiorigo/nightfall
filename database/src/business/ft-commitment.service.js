@@ -1,5 +1,5 @@
 import { COLLECTIONS } from '../common/constants';
-import { ftCommitmentMapper, ftCommitmentTransferTransactionMapper } from '../mappers';
+import { ftCommitmentMapper } from '../mappers';
 import FtCommitmentTransactionService from './ft-commitment-transaction.service';
 
 export default class FtCommitmentService {
@@ -14,37 +14,32 @@ export default class FtCommitmentService {
    * @param {object} data
    */
   insertFTCommitmentTransaction(data) {
-    const { isTransferred, isReceived, isChange, isBurned } = data;
-
-    let mappedData;
-
-    if (isTransferred) mappedData = ftCommitmentTransferTransactionMapper(data);
-    else mappedData = ftCommitmentMapper(data);
+    const { isTransferred, isReceived, isChange, isBurned, isBatchTransferred } = data;
 
     if (isReceived)
       return this.ftCommitmentTransactionService.insertTransaction({
-        ...mappedData,
-        type: 'received',
+        ...data,
+        transactionType: 'transfer_incoming',
       });
-    if (isTransferred)
+    if (isTransferred || isBatchTransferred)
       return this.ftCommitmentTransactionService.insertTransaction({
-        ...mappedData,
-        type: 'transferred',
+        ...data,
+        transactionType: 'transfer_outgoing',
       });
     if (isBurned)
       return this.ftCommitmentTransactionService.insertTransaction({
-        ...mappedData,
-        type: 'burned',
+        ...data,
+        transactionType: 'burn',
       });
     if (isChange)
       return this.ftCommitmentTransactionService.insertTransaction({
-        ...mappedData,
-        type: 'change',
+        ...data,
+        transactionType: 'change',
       });
 
     return this.ftCommitmentTransactionService.insertTransaction({
-      ...mappedData,
-      type: 'minted',
+      ...data,
+      transactionType: 'mint',
     });
   }
 
@@ -62,19 +57,16 @@ export default class FtCommitmentService {
    * @param {object} data - contains all the atributes required while transfer and burn of a coin
    */
   async updateFTCommitmentByCommitmentHash(commitmentHash, data) {
-    const { isBurned } = data;
     const mappedData = ftCommitmentMapper(data);
-
     await this.db.updateData(
       COLLECTIONS.FT_COMMITMENT,
       {
-        coin_commitment: commitmentHash,
-        is_transferred: { $exists: false },
+        commitment: commitmentHash,
+        isTransferred: { $exists: false },
+        isBatchTransferred: { $exists: false },
       },
       { $set: mappedData },
     );
-
-    if (isBurned) await this.insertFTCommitmentTransaction(data);
   }
 
   /**
@@ -86,19 +78,21 @@ export default class FtCommitmentService {
   getFTCommitments(pageination) {
     if (!pageination || !pageination.pageNo || !pageination.limit) {
       return this.db.getData(COLLECTIONS.FT_COMMITMENT, {
-        is_transferred: { $exists: false },
-        is_burned: { $exists: false },
+        isTransferred: { $exists: false },
+        isBatchTransferred: { $exists: false },
+        isBurned: { $exists: false },
       });
     }
     const { pageNo, limit } = pageination;
     return this.db.getDbData(
       COLLECTIONS.FT_COMMITMENT,
       {
-        is_transferred: { $exists: false },
-        is_burned: { $exists: false },
+        isTransferred: { $exists: false },
+        isBatchTransferred: { $exists: false },
+        isBurned: { $exists: false },
       },
       undefined,
-      { created_at: -1 },
+      { createdAt: -1 },
       parseInt(pageNo, 10),
       parseInt(limit, 10),
     );

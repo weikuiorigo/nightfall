@@ -1,4 +1,4 @@
-import { whisperTransaction } from './whisper';
+import { sendWhisperMessage } from './whisper';
 import { db, offchain, zkp } from '../rest';
 
 // ERC-20 token
@@ -7,14 +7,20 @@ import { db, offchain, zkp } from '../rest';
  * req.user {
     address: '0x432038accaf756a8936a7f067a8223c2d929d58f',
     name: 'alice',
-    pk_A: '0xd68df96f6cddd786290b57fcead37ea670dfe94634f553afeedfef',
+    publicKey: '0xd68df96f6cddd786290b57fcead37ea670dfe94634f553afeedfef',
     password: 'alicesPassword'
   }
  * req.body {
-    amount: 4,
+    value: 4,
     shieldContractAddress: '0x04b95c76d5075620a655b707a7901462aea8656c',
-    sender: 'a',
-    senderAddress: '0x04b95c76d5075620a655b707a7901462aea8656d',
+    sender: {
+      name: 'a',
+      address: '0x04b95c76d5075620a655b707a7901462aea8656d'
+    },
+    receiver: {
+      name: 'b',
+      address: '0x04b95c76d5075620a655b707a7901462aea8656d'
+    },
   }
  * @param {*} req
  * @param {*} res
@@ -33,7 +39,7 @@ export async function insertFTTransactionToDb(req, res, next) {
  * req.user {
     address: '0x432038accaf756a8936a7f067a8223c2d929d58f',
     name: 'alice',
-    pk_A: '0xd68df96f6cddd786290b57fcead37ea670dfe94634f553afeedfef',
+    publicKey: '0xd68df96f6cddd786290b57fcead37ea670dfe94634f553afeedfef',
     password: 'alicesPassword'
   }
  * req.query {
@@ -55,21 +61,19 @@ export async function getFTTransactions(req, res, next) {
 /**
  * This function will mint a fungible token
  * req.body { 
-    amount : 200 
+    value : 200 
   }
  * @param {*} req
  * @param {*} res
 */
 export async function mintFToken(req, res, next) {
   try {
-    await zkp.mintFToken(req.user, {
-      amount: req.body.amount,
-    });
+    await zkp.mintFToken(req.user, req.body);
 
     const user = await db.fetchUser(req.user);
 
     await db.insertFTTransaction(req.user, {
-      amount: req.body.amount,
+      value: req.body.value,
       shieldContractAddress: user.selected_coin_shield_contract,
       isMinted: true,
     });
@@ -84,37 +88,38 @@ export async function mintFToken(req, res, next) {
 /**
  * This function will transfer fungible token to a receiver
  * req.body { 
-    amount : 200,
-    receiver_name: "Bob"
+    value : 200,
+    receiver: {
+      name: "Bob"
+    }
    }
  * @param {*} req
  * @param {*} res
 */
 export async function transferFToken(req, res, next) {
-  try {
-    const receiverAddress = await offchain.getAddressFromName(req.body.receiver_name);
+  const { receiver, value } = req.body;
 
-    await zkp.transferFToken(req.user, {
-      amount: req.body.amount,
-      toAddress: receiverAddress,
-    });
+  try {
+    receiver.address = await offchain.getAddressFromName(receiver.name);
+
+    await zkp.transferFToken(req.user, req.body);
 
     const user = await db.fetchUser(req.user);
 
     await db.insertFTTransaction(req.user, {
-      amount: req.body.amount,
+      value,
       shieldContractAddress: user.selected_coin_shield_contract,
-      receiver: req.body.receiver_name,
-      receiverAddress,
+      receiver,
+      sender: req.user,
       isTransferred: true,
     });
 
-    await whisperTransaction(req, {
-      amount: req.body.amount,
+    await sendWhisperMessage(user.shhIdentity, {
+      value,
       shieldContractAddress: user.selected_coin_shield_contract,
-      receiver: req.body.receiver_name,
-      sender: req.user.name,
-      senderAddress: req.user.address,
+      receiver,
+      sender: req.user,
+      isReceived: true,
       for: 'FToken',
     }); // send ft token data to BOB side
 
@@ -128,21 +133,19 @@ export async function transferFToken(req, res, next) {
 /**
  * This function will burn a fungible token.
  * req.body { 
-     amount : 200
+    value : 200
   }
  * @param {*} req
  * @param {*} res
 */
 export async function burnFToken(req, res, next) {
   try {
-    await zkp.burnFToken(req.user, {
-      amount: req.body.amount,
-    });
+    await zkp.burnFToken(req.user, req.body);
 
     const user = await db.fetchUser(req.user);
 
     await db.insertFTTransaction(req.user, {
-      amount: req.body.amount,
+      value: req.body.value,
       shieldContractAddress: user.selected_coin_shield_contract,
       isBurned: true,
     });
@@ -175,6 +178,17 @@ export async function getFTokenAddress(req, res, next) {
 /**
  * This function will retrieve information of the fungible token.
  * Which will retrieve the balance, name and symbol of the fungible token
+ * @apiSuccess (Success 200) {Object} data information of the fungible token.
+ *
+ * @apiSuccessExample {json} Success response:
+ * HTTPS 200 OK
+ *
+ * data":{
+ *    "balance":"0",
+ *    "symbol":"OPS",
+ *    "name":"EY OpsCoin"
+ * }
+ *
  * @param {*} req
  * @param {*} res
  */

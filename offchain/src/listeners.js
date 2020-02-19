@@ -1,147 +1,85 @@
 import apiGateway from './rest/api-gateway';
 
-async function insertNFTToDb(data, userData) {
-  try {
-    console.log('\noffchain/src/listeners.js', 'insertNFTToDb', '\ndata', data);
+async function insertNFTToDb(data, { jwtToken }) {
+  console.log('\noffchain/src/listeners.js', 'insertNFTToDb', '\ndata', data);
 
-    await apiGateway.insertNFTToDb(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        uri: data.uri,
-        tokenId: data.tokenId,
-        shieldContractAddress: data.shieldContractAddress,
-        sender: data.sender,
-        senderAddress: data.senderAddress,
-        isReceived: true,
-      },
-    );
-  } catch (err) {
-    console.log(err);
-  }
+  await apiGateway.insertNFTToDb({ authorization: jwtToken }, data);
 }
 
-async function insertFTTransactionToDb(data, userData) {
-  try {
-    console.log('\noffchain/src/listeners.js', 'insertFTTransactionToDb', '\ndata', data);
+async function insertFTTransactionToDb(data, { jwtToken }) {
+  console.log('\noffchain/src/listeners.js', 'insertFTTransactionToDb', '\ndata', data);
 
-    await apiGateway.insertFTTransactionToDb(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        amount: data.amount,
-        shieldContractAddress: data.shieldContractAddress,
-        sender: data.sender,
-        senderAddress: data.senderAddress,
-        isReceived: true,
-      },
-    );
-  } catch (err) {
-    console.log(err);
-  }
+  await apiGateway.insertFTTransactionToDb({ authorization: jwtToken }, data);
 }
 
-async function insertNFTCommitmentToDb(data, userData) {
-  try {
-    console.log(
-      '\noffchain/src/listeners.js',
-      '\naddToken',
-      '\ndata',
-      data,
-      '\nuserData',
-      userData,
-    );
+async function insertNFTCommitmentToDb(data, { jwtToken }) {
+  console.log('\noffchain/src/listeners.js', '\ninsertNFTCommitmentToDb', '\ndata', data);
 
-    const correctnessChecks = await apiGateway.checkCorrectnessForNFTCommitment(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        A: data.tokenId,
-        pk: data.receiverPublicKey,
-        S_A: data.salt,
-        z_A: data.commitment,
-        z_A_index: data.commitmentIndex,
-      },
-    );
+  const { blockNumber, outputCommitments } = data;
+  const [{ tokenId, salt, owner, commitment, commitmentIndex }] = outputCommitments;
 
-    console.log(
-      '\noffchain/src/listeners.js',
-      '\ninsertNFTCommitmentToDb',
-      '\ncorrectnessChecks',
-      correctnessChecks,
-    );
+  const correctnessChecks = await apiGateway.checkCorrectnessForNFTCommitment(
+    {
+      authorization: jwtToken,
+    },
+    {
+      tokenId,
+      publicKey: owner.publicKey,
+      salt,
+      commitment,
+      commitmentIndex,
+      blockNumber,
+    },
+  );
 
-    await apiGateway.insertNFTCommitmentToDb(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        tokenUri: data.tokenUri,
-        tokenId: data.tokenId,
-        salt: data.salt,
-        commitment: data.commitment,
-        commitmentIndex: data.commitmentIndex,
-        isReceived: true,
-        zCorrect: correctnessChecks.data.z_correct,
-        zOnchainCorrect: correctnessChecks.data.z_onchain_correct,
-      },
-    );
-  } catch (err) {
-    console.log(err);
-  }
+  console.log(
+    '\noffchain/src/listeners.js',
+    '\ninsertNFTCommitmentToDb',
+    '\ncorrectnessChecks',
+    correctnessChecks,
+  );
+
+  const { zCorrect, zOnchainCorrect } = correctnessChecks.data;
+
+  await apiGateway.insertNFTCommitmentToDb(
+    { authorization: jwtToken },
+    { ...data, zCorrect, zOnchainCorrect },
+  );
 }
 
-async function insertFTCommitmentToDb(data, userData) {
-  try {
-    console.log(
-      '\noffchain/src/listeners.js',
-      '\ninsertFTCommitmentToDb',
-      '\ndata',
-      data,
-      '\nuserData',
-      userData,
-    );
+async function insertFTCommitmentToDb(data, { jwtToken }) {
+  console.log('\noffchain/src/listeners.js', '\ninsertFTCommitmentToDb', '\ndata', data);
 
-    const correctnessChecks = await apiGateway.checkCorrectnessForFTCommitment(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        E: data.amount,
-        S_E: data.salt,
-        pk: data.pk,
-        z_E: data.commitment,
-        z_E_index: data.commitmentIndex,
-      },
-    );
+  const { blockNumber, outputCommitments } = data;
+  const [{ value, salt, owner, commitment, commitmentIndex }] = outputCommitments;
 
-    console.log(
-      '\noffchain/src/listeners.js',
-      '\ninsertFTCommitmentToDb',
-      '\ncorrectnessChecks',
-      correctnessChecks,
-    );
+  const correctnessChecks = await apiGateway.checkCorrectnessForFTCommitment(
+    {
+      authorization: jwtToken,
+    },
+    {
+      value,
+      salt,
+      publicKey: owner.publicKey,
+      commitment,
+      commitmentIndex,
+      blockNumber,
+    },
+  );
 
-    await apiGateway.insertFTCommitmentToDb(
-      {
-        authorization: userData.jwtToken,
-      },
-      {
-        amount: data.amount,
-        salt: data.salt,
-        commitment: data.commitment,
-        commitmentIndex: data.commitmentIndex,
-        isReceived: true,
-        zCorrect: correctnessChecks.data.zCorrect,
-        zOnchainCorrect: correctnessChecks.data.zOnchainCorrect,
-      },
-    );
-  } catch (err) {
-    console.log(err);
-  }
+  console.log(
+    '\noffchain/src/listeners.js',
+    '\ninsertFTCommitmentToDb',
+    '\ncorrectnessChecks',
+    correctnessChecks,
+  );
+
+  const { zCorrect, zOnchainCorrect } = correctnessChecks.data;
+
+  await apiGateway.insertFTCommitmentToDb(
+    { authorization: jwtToken },
+    { ...data, zCorrect, zOnchainCorrect },
+  );
 }
 
 function listeners(data, userData) {

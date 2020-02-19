@@ -23,7 +23,7 @@
       <div class="box-body">
         <div class="containe-form" *ngIf="transactions && transactions.length">
             <div class="form-group">
-                <label for="name mb-1">Select Coin</label>
+                <label for="name mb-1">Select {{ ftSymbol }} Commitment</label>
                 <div class="row col-sm-12">
                   <ng-select
                     #select
@@ -36,18 +36,18 @@
                     [maxSelectedItems]="1"
                     [searchFn]="customSearchFn"
                     [(ngModel)]="selectedCommitmentList"
-                    placeholder="Select Private {{ ftName }}"
+                    placeholder="Select {{ ftSymbol }} Commitment"
                     style="width:50%;"
                   >
                     <ng-template ng-label-tmp let-item="item">
                       <span aria-hidden="true" class="ng-value-icon left" (click)="onRemove(item)"
                         >×</span
                       >
-                      <b>{{ utilService.convertToNumber(item.coin_value) }} </b>Coin &nbsp;
+                      <b>{{ utilService.convertToNumber(item.value) }} </b>{{ ftSymbol }} &nbsp;
                     </ng-template>
                     <ng-template ng-option-tmp let-item="item" let-index="index">
-                      <b>{{ utilService.convertToNumber(item.coin_value) }} </b>Coin ({{
-                        item.coin_commitment.slice(0, 20)
+                      <b>{{ utilService.convertToNumber(item.value) }} </b>{{ ftSymbol }} ({{
+                        item.commitment.slice(0, 20)
                       }})...
                     </ng-template>
                   </ng-select>
@@ -55,12 +55,12 @@
               </div>
       
               <div class="form-group" >
-                <label for="publickey">Select Receiver</label>
+                <label for="publicKey">Select Receiver</label>
                 <div class="row">
                   <div class="col-sm-6">
                     <select
                       class="form-control"
-                      id="publickey"
+                      id="publicKey"
                       name="sellist1"
                       [(ngModel)]="receiverName"
                       required

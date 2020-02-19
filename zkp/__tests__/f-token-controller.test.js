@@ -1,10 +1,11 @@
 /* eslint-disable import/no-unresolved */
 
+import { erc20 } from '@eyblockchain/nightlite';
 import bc from '../src/web3';
 
 import utils from '../src/zkpUtils';
 import controller from '../src/f-token-controller';
-import { getVkId, getContract } from '../src/contractUtils';
+import { getTruffleContractInstance } from '../src/contractUtils';
 
 jest.setTimeout(7200000);
 
@@ -15,15 +16,15 @@ const F = '0x00000000000000000000000000000010'; // don't forget to make C+D=E+F
 const G = '0x00000000000000000000000000000030';
 const H = '0x00000000000000000000000000000020'; // these constants used to enable a second transfer
 const I = '0x00000000000000000000000000000050';
-const skA = '0x0000000000111111111111111111111111111111111111111111111111111111';
-const skB = '0x0000000000222222222222222222222222222222222222222222222222222222';
+const skA = '0x1111111111111111111111111111111111111111111111111111111111111111';
+const skB = '0x2222222222222222222222222222222222222222222222222222222222222222';
 let S_A_C;
 let S_A_D;
 let sAToBE;
 let sAToAF;
 let pkA;
 let pkB;
-const pkE = '0x0000000000111111111111111111111111111111111111111111111111111112';
+const pkE = '0x1111111111111111111111111111111111111111111111111111111111111112';
 let Z_A_C;
 let Z_A_D;
 let S_B_G;
@@ -44,7 +45,7 @@ let fTokenShieldAddress;
 beforeAll(async () => {
   if (!(await bc.isConnected())) await bc.connect();
   accounts = await (await bc.connection()).eth.getAccounts();
-  const { contractJson, contractInstance } = await getContract('FTokenShield');
+  const { contractJson, contractInstance } = await getTruffleContractInstance('FTokenShield');
   fTokenShieldAddress = contractInstance.address;
   fTokenShieldJson = contractJson;
   // blockchainOptions = { account, fTokenShieldJson, fTokenShieldAddress };
@@ -52,8 +53,9 @@ beforeAll(async () => {
   S_A_D = await utils.rndHex(32);
   sAToBE = await utils.rndHex(32);
   sAToAF = await utils.rndHex(32);
-  pkA = utils.ensure0x(utils.strip0x(utils.hash(skA)).padStart(32, '0'));
-  pkB = utils.ensure0x(utils.strip0x(utils.hash(skB)).padStart(32, '0'));
+  // pkA = utils.ensure0x(utils.strip0x(utils.hash(skA)).padStart(32, '0'));
+  pkA = utils.hash(skA);
+  pkB = utils.hash(skB);
   Z_A_C = utils.concatenateThenHash(C, pkA, S_A_C);
   Z_A_D = utils.concatenateThenHash(D, pkA, S_A_D);
   S_B_G = await utils.rndHex(32);
@@ -108,15 +110,19 @@ describe('f-token-controller.js tests', () => {
 
   test('Should mint an ERC-20 commitment Z_A_C for Alice for asset C', async () => {
     console.log('Alices account ', (await controller.getBalance(accounts[0])).toNumber());
-    const { commitment: zTest, commitmentIndex: zIndex } = await controller.mint(
+    const { commitment: zTest, commitmentIndex: zIndex } = await erc20.mint(
       C,
       pkA,
       S_A_C,
-      await getVkId('MintFToken'),
       {
         account: accounts[0],
         fTokenShieldJson,
         fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-mint/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-mint`,
+        pkPath: `${process.cwd()}/code/gm17/ft-mint/proving.key`,
       },
     );
     zInd1 = parseInt(zIndex, 10);
@@ -125,15 +131,19 @@ describe('f-token-controller.js tests', () => {
   });
 
   test('Should mint another ERC-20 commitment Z_A_D for Alice for asset D', async () => {
-    const { commitment: zTest, commitmentIndex: zIndex } = await controller.mint(
+    const { commitment: zTest, commitmentIndex: zIndex } = await erc20.mint(
       D,
       pkA,
       S_A_D,
-      await getVkId('MintFToken'),
       {
         account: accounts[0],
         fTokenShieldJson,
         fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-mint/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-mint`,
+        pkPath: `${process.cwd()}/code/gm17/ft-mint/proving.key`,
       },
     );
     zInd2 = parseInt(zIndex, 10);
@@ -144,35 +154,43 @@ describe('f-token-controller.js tests', () => {
   test('Should transfer a ERC-20 commitment to Bob (two coins get nullified, two created; one coin goes to Bob, the other goes back to Alice as change)', async () => {
     // E becomes Bob's, F is change returned to Alice
     const inputCommitments = [
-      { value: C, salt: S_A_C, commitment: Z_A_C, index: zInd1 },
-      { value: D, salt: S_A_D, commitment: Z_A_D, index: zInd2 },
+      { value: C, salt: S_A_C, commitment: Z_A_C, commitmentIndex: zInd1 },
+      { value: D, salt: S_A_D, commitment: Z_A_D, commitmentIndex: zInd2 },
     ];
     const outputCommitments = [{ value: E, salt: sAToBE }, { value: F, salt: sAToAF }];
-    await controller.transfer(
+    await erc20.transfer(
       inputCommitments,
       outputCommitments,
       pkB,
       skA,
-      await getVkId('TransferFToken'),
       {
         account: accounts[0],
         fTokenShieldJson,
         fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-transfer/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-transfer`,
+        pkPath: `${process.cwd()}/code/gm17/ft-transfer/proving.key`,
       },
     );
     // now Bob should have 40 (E) ETH
   });
 
   test('Should mint another ERC-20 commitment Z_B_G for Bob for asset G', async () => {
-    const { commitment: zTest, commitmentIndex: zIndex } = await controller.mint(
+    const { commitment: zTest, commitmentIndex: zIndex } = await erc20.mint(
       G,
       pkB,
       S_B_G,
-      await getVkId('MintFToken'),
       {
         account: accounts[1],
         fTokenShieldJson,
         fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-mint/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-mint`,
+        pkPath: `${process.cwd()}/code/gm17/ft-mint/proving.key`,
       },
     );
     zInd3 = parseInt(zIndex, 10);
@@ -182,21 +200,25 @@ describe('f-token-controller.js tests', () => {
   test('Should transfer an ERC-20 commitment to Eve', async () => {
     // H becomes Eve's, I is change returned to Bob
     const inputCommitments = [
-      { value: E, salt: sAToBE, commitment: Z_B_E, index: zInd1 + 2 },
-      { value: G, salt: S_B_G, commitment: Z_B_G, index: zInd3 },
+      { value: E, salt: sAToBE, commitment: Z_B_E, commitmentIndex: zInd1 + 2 },
+      { value: G, salt: S_B_G, commitment: Z_B_G, commitmentIndex: zInd3 },
     ];
     const outputCommitments = [{ value: H, salt: sBToEH }, { value: I, salt: sBToBI }];
 
-    await controller.transfer(
+    await erc20.transfer(
       inputCommitments,
       outputCommitments,
       pkE,
       skB,
-      await getVkId('TransferFToken'),
       {
         account: accounts[1],
         fTokenShieldJson,
         fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-transfer/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-transfer`,
+        pkPath: `${process.cwd()}/code/gm17/ft-transfer/proving.key`,
       },
     );
   });
@@ -206,12 +228,24 @@ describe('f-token-controller.js tests', () => {
     const bal = await controller.getBalance(accounts[0]);
     console.log('accounts[3]', bal1.toNumber());
     console.log('accounts[0]', bal.toNumber());
-    await controller.burn(F, skA, sAToAF, Z_A_F, zInd2 + 2, await getVkId('BurnFToken'), {
-      account: accounts[0],
-      tokenReceiver: accounts[3],
-      fTokenShieldJson,
-      fTokenShieldAddress,
-    });
+    await erc20.burn(
+      F,
+      skA,
+      sAToAF,
+      Z_A_F,
+      zInd2 + 2,
+      {
+        account: accounts[0],
+        tokenReceiver: accounts[3],
+        fTokenShieldJson,
+        fTokenShieldAddress,
+      },
+      {
+        codePath: `${process.cwd()}/code/gm17/ft-burn/out`,
+        outputDirectory: `${process.cwd()}/code/gm17/ft-burn`,
+        pkPath: `${process.cwd()}/code/gm17/ft-burn/proving.key`,
+      },
+    );
     const bal2 = await controller.getBalance(accounts[3]);
     console.log('accounts[3]', bal2.toNumber());
     expect(parseInt(F, 16)).toEqual(bal2 - bal1);

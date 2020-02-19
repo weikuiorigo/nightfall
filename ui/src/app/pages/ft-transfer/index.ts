@@ -9,7 +9,7 @@ import { UtilService } from '../../services/utils/util.service';
  *  Spend fungible token component, which is used for rendering the page of transfer ERC-20 token to the selected receipent.
  */
 @Component({
-  selector: 'ft-transfer',
+  selector: 'app-ft-transfer',
   templateUrl: './index.html',
   providers: [FtService, UserService, UtilService],
   styleUrls: ['./index.css']
@@ -43,7 +43,7 @@ export default class FtTransferComponent implements OnInit {
   /**
    * To store the ERC-20 token count.
    */
-  coinCount;
+  ftBalance;
 
 
   constructor(
@@ -68,7 +68,7 @@ export default class FtTransferComponent implements OnInit {
   getFTokenInfo() {
     this.userService.getFTokenInfo().subscribe(
       data => {
-        this.coinCount = data['data']['balance'];
+        this.ftBalance = data['data']['balance'];
       },
       error => {
         console.log('error in user get', error);
@@ -80,11 +80,11 @@ export default class FtTransferComponent implements OnInit {
    */
   transferFToken() {
     if (!this.amount || !this.receiverName) { return; }
-    if (this.amount > this.coinCount) {
+    if (this.amount > this.ftBalance) {
       return this.toastr.error('You do not have enough ERC-20 tokens');
     }
     this.isRequesting = true;
-    this.ftService.transferFToken(this.amount, localStorage.getItem('address'), this.receiverName).subscribe(transaction => {
+    this.ftService.transferFToken(this.amount, this.receiverName).subscribe(transaction => {
       this.isRequesting = false;
       this.toastr.success('fungible token transferred Successfully.');
       this.router.navigate(['/overview'], { queryParams: { selectedTab: 'ft' } });

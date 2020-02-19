@@ -18,7 +18,7 @@
               <h3 class="">{{ ftName }} Commitment</h3>
             </div>
             <div class="col-sm-6">
-              <a class="btn btn-primary btn-list pull-right" [routerLink]="['/coin/mint']"
+              <a class="btn btn-primary btn-list pull-right" [routerLink]="['/ft-commitment/mint']"
                 >Mint {{ ftName }} Commitment</a
               >
             </div>
@@ -32,14 +32,14 @@
                 *ngFor="let transaction of transactions; let i = index"
               >
                 <div
-                  *ngIf="transaction.coin_commitment"
+                  *ngIf="transaction.commitment"
                   class="token-card"
                   [ngClass]="{ active: transaction.selected }"
                 >
                   <p class="list-token header">
-                    {{ utilService.convertToNumber(transaction.coin_value) }} Private {{ ftName }}
+                    {{ utilService.convertToNumber(transaction.value) }} Private {{ ftName }}
                   </p>
-                  <p class="list-token">{{ transaction.coin_commitment.slice(0, 30) }}...</p>
+                  <p class="list-token">{{ transaction.commitment.slice(0, 30) }}...</p>
                 </div>
               </div>
             </div>

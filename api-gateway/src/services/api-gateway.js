@@ -24,7 +24,7 @@ export async function loginHandler(req, res, next) {
       address: data.address,
       name: data.name,
       jwtToken: token,
-      sk_A: data.secretkey,
+      sk_A: data.secretKey,
     };
     await setWhisperIdentityAndSubscribe(userData);
 
@@ -52,19 +52,17 @@ export async function createAccountHandler(req, res, next) {
     if (status) throw Error('Name already in use');
 
     const address = (await accounts.createAccount(password)).data;
-    const shhIdentity = '';
 
     const data = await db.createUser({
       ...req.body,
       address,
-      shhIdentity,
     });
 
     await accounts.unlockAccount({ address, password });
 
     await offchain.setName(address, name);
     await offchain.setZkpPublicKey(address, {
-      pk: data.publickey,
+      publicKey: data.publicKey,
     });
 
     res.data = data;
@@ -101,13 +99,13 @@ export async function loadVks(req, res, next) {
 function setShieldContract(user, contractAddress) {
   return new Promise(function setShieldDetails(resolve) {
     zkp
-      .setTokenShield(user, { tokenShield: contractAddress })
-      .then(() => resolve('token'))
+      .setTokenShield(user, { nftCommitmentShield: contractAddress })
+      .then(() => resolve('nft'))
       .catch(() => zkp.unSetTokenShield(user));
     zkp
-      .setCoinShield(user, { coinShield: contractAddress })
-      .then(() => resolve('coin'))
-      .catch(() => zkp.unSetCoinShield(user));
+      .setFTCommitmentShield(user, { ftCommitmentShield: contractAddress })
+      .then(() => resolve('ft'))
+      .catch(() => zkp.unSetFTCommitmentShield(user));
   });
 }
 
@@ -125,13 +123,13 @@ export async function addContractInfo(req, res, next) {
 
   try {
     const type = await setShieldContract(req.user, contractAddress);
-    if (type === 'coin')
+    if (type === 'ft')
       await db.addFTShieldContractInfo(req.user, {
         contractAddress,
         contractName,
         isSelected,
       });
-    if (type === 'token')
+    if (type === 'nft')
       await db.addNFTShieldContractInfo(req.user, {
         contractAddress,
         contractName,
@@ -149,14 +147,14 @@ export async function addContractInfo(req, res, next) {
  * This function will update sheild contract information
    will change primary selected contract for user of both
    ERC-20 and ERC-721.
- * in body "tokenShield" and "coinShield" object are optional.
+ * in body "nftCommitmentShield" and "ftCommitmentShield" object are optional.
  * req.body {
-    "tokenShield": {
+    "nftCommitmentShield": {
       "contractAddress": "0x88B8d386BA803423482f325Be664607AE1Db6E1F",
       "contractName": "tokenShield1",
       "isSelected": true
     },
-    "coinShield": {
+    "ftCommitmentShield": {
       "contractAddress": "0x3BBa2cdBb2376F07017421878540c424aAB61294",
       "contractName": "coinShield0",
       "isSelected": false
@@ -166,17 +164,17 @@ export async function addContractInfo(req, res, next) {
  * @param {*} res
 */
 export async function updateContractInfo(req, res, next) {
-  const { tokenShield, coinShield } = req.body;
+  const { nftCommitmentShield, ftCommitmentShield } = req.body;
 
   try {
     const user = await db.fetchUser(req.user);
 
-    // if update coinShield data
-    if (coinShield) {
-      const { contractName, contractAddress, isSelected } = coinShield;
+    // if update ftCommitmentShield data
+    if (ftCommitmentShield) {
+      const { contractName, contractAddress, isSelected } = ftCommitmentShield;
 
       const isFTShieldPreviousSelected =
-        user.selected_coin_shield_contract === coinShield.contractAddress;
+        user.selectedFTokenShield === ftCommitmentShield.contractAddress;
 
       await db.updateFTShieldContractInfoByContractAddress(req.user, contractAddress, {
         contractName,
@@ -184,16 +182,17 @@ export async function updateContractInfo(req, res, next) {
         isFTShieldPreviousSelected,
       });
 
-      if (isSelected) await zkp.setCoinShield(req.user, { coinShield: contractAddress });
-      else if (isFTShieldPreviousSelected) await zkp.unSetCoinShield(req.user);
+      if (isSelected)
+        await zkp.setFTCommitmentShield(req.user, { ftCommitmentShield: contractAddress });
+      else if (isFTShieldPreviousSelected) await zkp.unSetFTCommitmentShield(req.user);
     }
 
-    // if update tokenShield data
-    if (tokenShield) {
-      const { contractName, contractAddress, isSelected } = tokenShield;
+    // if update nftCommitmentShield data
+    if (nftCommitmentShield) {
+      const { contractName, contractAddress, isSelected } = nftCommitmentShield;
 
       const isNFTShieldPreviousSelected =
-        user.selected_token_shield_contract === tokenShield.contractAddress;
+        user.selectedNFTokenShield === nftCommitmentShield.contractAddress;
 
       await db.updateNFTShieldContractInfoByContractAddress(req.user, contractAddress, {
         contractName,
@@ -201,7 +200,7 @@ export async function updateContractInfo(req, res, next) {
         isNFTShieldPreviousSelected,
       });
 
-      if (isSelected) await zkp.setTokenShield(req.user, { tokenShield: contractAddress });
+      if (isSelected) await zkp.setTokenShield(req.user, { nftCommitmentShield: contractAddress });
       else if (isNFTShieldPreviousSelected) await zkp.unSetTokenShield(req.user);
     }
 
@@ -232,7 +231,7 @@ export async function deleteContractInfo(req, res, next) {
         req.user,
         query.coin_shield,
       );
-      if (data.status) await zkp.unSetCoinShield(req.user);
+      if (data.status) await zkp.unSetFTCommitmentShield(req.user);
     }
     if (query.token_shield) {
       const data = await db.deleteNFTShieldContractInfoByContractAddress(
@@ -251,6 +250,14 @@ export async function deleteContractInfo(req, res, next) {
 
 /**
  * This function will retrieve all the registered names.
+ * @apiSuccess (Success 200) {Array} Array of all registered names.
+ *
+ * @apiSuccessExample {json} Success response:
+ * HTTPS 200 OK
+ * "data":[
+ *    "alice",
+ *     "bob"
+ * ]
  * @param {*} req
  * @param {*} res
  */
@@ -265,6 +272,14 @@ export async function getAllRegisteredNames(req, res, next) {
 
 /**
  * This function will fetch token commitments counts from database
+ * @apiSuccess (Success 200) {Object} data count of ft and nft commitments.
+ *
+ * @apiSuccessExample {json} Success response:
+ * HTTPS 200 OK
+ * data:{
+ *    "nftCommitmentCount":0,
+ *    "ftCommitmentCount":0
+ * }
  * @param {*} req
  * @param {*} res
  */
@@ -276,7 +291,7 @@ export async function getTokenCommitmentCounts(req, res, next) {
     let totalAmount = 0;
     if (ftCommitments.length) {
       ftCommitments.forEach(ftCommitment => {
-        totalAmount += Number(ftCommitment.coin_value);
+        totalAmount += Number(ftCommitment.value);
       });
     }
 

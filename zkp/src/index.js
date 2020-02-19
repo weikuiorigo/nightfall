@@ -1,12 +1,14 @@
 /**
  * @module restapi.js
  * @author Liju, AsishAP
- * @desc This restapi.js file gives api endpoints to access the functions of Asset, Auth, TokenHolder, TokenHolderList smart contracts */
-//
+ * @desc
+ */
+
 import express from 'express';
 import bodyParser from 'body-parser';
+import { merkleTree, provider } from '@eyblockchain/nightlite';
 import { ftCommitmentRoutes, ftRoutes, nftCommitmentRoutes, nftRoutes } from './routes';
-import vkController from './vk-controller';
+import vkController from './vk-controller'; // this import TRIGGERS the runController() script within.
 import { formatResponse, formatError, errorHandler } from './middlewares';
 
 const app = express();
@@ -38,10 +40,13 @@ app.use('/', ftCommitmentRoutes);
 app.use('/', ftRoutes);
 app.use('/', nftRoutes);
 
+// Provide Nightlite with a provider.
+provider.connect();
+
 app.route('/vk').post(async function runVkController(req, res, next) {
   try {
     await vkController.runController();
-    res.data = { message: 'vk loaded' };
+    res.data = { message: 'verification keys loaded' };
     next();
   } catch (err) {
     next(err);
@@ -66,6 +71,12 @@ app.use(function logError(err, req, res, next) {
 
 app.use(formatError);
 app.use(errorHandler);
+
+/**
+We TRIGGER the merkle-tree microservice's event filter from here.
+TODO: consider whether there is a better way to do this when the application starts-up.
+*/
+if (process.env.NODE_ENV !== 'test') merkleTree.startEventFilter();
 
 const server = app.listen(80, '0.0.0.0', () =>
   console.log('Zero-Knowledge-Proof RESTful API server started on ::: 80'),

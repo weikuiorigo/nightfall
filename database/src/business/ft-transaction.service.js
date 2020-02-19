@@ -9,13 +9,10 @@ export default class FtTransactionService {
    * This function add record in ft_transaction tables.
    * @param {Object} data
    * data = {
-   *  amount,
-   *  shield_contract_address,
-   *  type,
+   *  transactionType
+   *  value,
    *  sender,
-   *  sender_address,
    *  receiver,
-   *  receiver_address,
    * }
    */
   insertTransaction(data) {
@@ -33,7 +30,7 @@ export default class FtTransactionService {
       COLLECTIONS.FT_TRANSACTION,
       {},
       undefined,
-      { created_at: -1 },
+      { createdAt: -1 },
       parseInt(pageNo, 10),
       parseInt(limit, 10),
     );

@@ -6,7 +6,7 @@ import { Observable } from 'rxjs/Observable';
 import { config } from '../shared/config';
 
 /**
- * Coin services, which accomodated all ERC-20 related methods.
+ * fungible services, which accomodated all ERC-20 related methods.
  */
 @Injectable()
 export default class FtService {
@@ -17,62 +17,57 @@ export default class FtService {
 
  /**
   * Method to initiate a HTTP request to mint ERC-20 token.
-  * @param account {Object} Account object
-  * @param amount {Number} Amount to mint
+  * @param value {Number} Amount to mint
   */
- mintFToken(account, amount) {
+ mintFToken(value) {
     const httpOptions = {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
     };
     const body = {
-      amount : amount,
-      account: account
+      value,
     };
     const url = config.apiGateway.root + 'mintFToken';
     return this.http
       .post(url, body, httpOptions)
-      .pipe(tap(data => console.log(`Bought Coins.`)), catchError(this.handleError('mintFToken', [])));
+      .pipe(tap(data => console.log(`Bought fungible.`)), catchError(this.handleError('mintFToken', [])));
   }
 
   /**
    *  Method to initiate a HTTP request to transfer ERC-20 token.
    *
-   * @param amount {Number} Amount to transfer
-   * @param account {Object} Account object
-   * @param receiver_name {String} Receiver name
+   * @param value {Number} Amount to transfer
+   * @param name {String} Receiver name
    */
-  transferFToken(amount, account, receiver_name) {
+  transferFToken(value, name) {
     const httpOptions = {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
     };
     const body = {
-      amount : amount,
-      receiver_name
+      value,
+      receiver: { name }
     };
     const url = config.apiGateway.root + 'transferFToken';
     return this.http
       .post(url, body, httpOptions)
-      .pipe(tap(data => console.log(`Bought Coins.`)), catchError(this.handleError('transferFToken', [])));
+      .pipe(tap(data => console.log(`Bought fungible.`)), catchError(this.handleError('transferFToken', [])));
   }
 
   /**
    * Method to initiate a HTTP request to burn ERC-20 token.
    *
-   * @param account {Object} Account details
-   * @param amount {Number} Amount to burn
+   * @param value {Number} Amount to burn
    */
-  burnFToken(account, amount) {
+  burnFToken(value) {
     const httpOptions = {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
     };
     const body = {
-      amount : amount,
-      account: account
+      value,
     };
     const url = config.apiGateway.root + 'burnFToken';
     return this.http
       .post(url, body, httpOptions)
-      .pipe(tap(data => console.log(`Bought Coins.`)), catchError(this.handleError('burnFToken', [])));
+      .pipe(tap(data => console.log(`Bought fungible.`)), catchError(this.handleError('burnFToken', [])));
   }
 
 

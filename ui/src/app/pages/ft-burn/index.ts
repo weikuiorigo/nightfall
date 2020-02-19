@@ -9,7 +9,7 @@ import { UtilService } from '../../services/utils/util.service';
  * Burn fungible token component, which is used for rendering the page of burn fungible token.
  */
 @Component({
-  selector: 'ft-burn',
+  selector: 'app-ft-burn',
   templateUrl: './index.html',
   providers: [FtService, UtilService, UserService],
   styleUrls: ['./index.css']
@@ -75,7 +75,7 @@ export default class FtBurnComponent implements OnInit {
       return this.toastr.error('You do not have enough ERC-20 tokens');
     }
     this.isRequesting = true;
-    this.ftService.burnFToken(localStorage.getItem('address'), this.amount).subscribe(transaction => {
+    this.ftService.burnFToken(this.amount).subscribe(transaction => {
       this.isRequesting = false;
       this.toastr.success('fungible token Burned Successfully.');
       this.router.navigate(['/overview'], { queryParams: { selectedTab: 'ft' } });

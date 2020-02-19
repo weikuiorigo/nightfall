@@ -7,7 +7,7 @@ import { UtilService } from '../../services/utils/util.service';
  * Mint fungible token component, which is used for rendering the page of mint ERC-20 token.
  */
 @Component({
-  selector: 'ft-mint',
+  selector: 'app-ft-mint',
   templateUrl: './index.html',
   providers: [FtService, UtilService],
   styleUrls: ['./index.css']
@@ -47,7 +47,7 @@ export default class FtMintComponent implements OnInit {
    */
   mintFToken() {
     this.isRequesting = true;
-    this.ftService.mintFToken(localStorage.getItem('address'), this.amount).subscribe(transaction => {
+    this.ftService.mintFToken(this.amount).subscribe(transaction => {
       this.isRequesting = false;
       this.toastr.success('fungible token minted successfully.');
       this.router.navigate(['/overview'], { queryParams: { selectedTab: 'ft' } });

@@ -1,4 +1,4 @@
-version: '3'
+version: '3.5'
 
 services:
   accounts:
@@ -15,6 +15,8 @@ services:
     environment:
       BLOCKCHAIN_HOST: http://ganache
       BLOCKCHAIN_PORT: 8545
+    networks:
+      - nightfall_network
 
   api-gateway:
     build:
@@ -35,12 +37,14 @@ services:
     environment:
       ACCOUNTS_HOST: http://accounts
       ACCOUNTS_PORT: 80
-      ZKP_HOST: http://zkp
-      ZKP_PORT: 80
       DATABASE_HOST: http://database
       DATABASE_PORT: 80
       OFFCHAIN_HOST: http://offchain
       OFFCHAIN_PORT: 80
+      ZKP_HOST: http://zkp
+      ZKP_PORT: 80
+    networks:
+      - nightfall_network
 
   offchain:
     build:
@@ -61,6 +65,8 @@ services:
       AUTHENTICATION_API_PORT: 80
       BLOCKCHAIN_HOST: ws://ganache
       BLOCKCHAIN_PORT: 8545
+    networks:
+      - nightfall_network
 
   zkp:
     build:
@@ -69,19 +75,24 @@ services:
     restart: on-failure
     depends_on:
       - ganache
+      - merkle-tree
     volumes:
       - ./zkp/src:/app/src:cached,ro
       - ./zkp/build:/app/build:delegated # Writeable for nodemon build
       - ./zkp/code:/app/code:cached # Writeable for ZoKrates build artifacts
       - ./zkp/.babelrc:/app/.babelrc:cached,ro
-      - ./zkp-utils:/app/node_modules/zkp-utils:ro
       - ./zkp/__tests__:/app/__tests__:cached,ro
       - ./zkp/config:/app/config:cached,ro
       - /var/run/docker.sock:/var/run/docker.sock # Writeable for Docker control communication
     environment:
       BLOCKCHAIN_HOST: ws://ganache
       BLOCKCHAIN_PORT: 8545
-      ZKP_CODE_VOLUME: nightfall_zkp-code
+      MERKLE_TREE_HOST: http://merkle-tree
+      MERKLE_TREE_PORT: 80
+      ZKP_CODE_VOLUME: nightfall_zkp-code-volume
+      NIGHTLITE_LOG_LEVEL: debug
+    networks:
+      - nightfall_network
 
   ui:
     build:
@@ -94,12 +105,16 @@ services:
       - ./ui/tsconfig.json:/app/tsconfig.json:cached,ro
     ports:
       - '8000:80'
+    networks:
+      - nightfall_network
 
   ganache:
     image: trufflesuite/ganache-cli:latest
     command: ganache-cli --accounts=10 --defaultBalanceEther=1000
     ports:
       - '8545:8545'
+    networks:
+      - nightfall_network
 
   database:
     build:
@@ -107,23 +122,27 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     depends_on:
-      - mongo
+      - mongo-nightfall
     volumes:
-      - ./database/src:/app/src:cached,ro
-      - ./database/.babelrc:/app/.babelrc:cached,ro
-      - ./zkp-utils:/app/node_modules/zkp-utils:ro
-      - ./database/config:/app/config:cached,ro
+      - ./database/src:/app/src,ro
+      - ./database/.babelrc:/app/.babelrc,ro
+      - ./zkp-utils:/app/node_modules/zkp-utils,ro
+      - ./database/config:/app/config,ro
       - ./database/setup-mongo-acl-for-new-users.js:/app/setup-mongo-acl-for-new-users.js:cached,ro
+    networks:
+      - nightfall_network
 
-  mongo:
+  mongo-nightfall:
     image: mongo
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=admin
       - MONGO_INITDB_DATABASE=nightfall
     volumes:
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d,ro
-      - mongo-volume:/data/db # Writeable for database state
+      - ./database/docker-entrypoint-initdb.d/01_setup_admin_user.js:/docker-entrypoint-initdb.d/01_setup_admin_user.js,ro
+      - mongo-nightfall-volume:/data/db
+    networks:
+      - nightfall_network
 
   truffle-offchain:
     image: ajmay/truffle:5.0.9
@@ -142,6 +161,8 @@ services:
     logging:
       options:
         max-size: 10m
+    networks:
+      - nightfall_network
 
   truffle-zkp:
     image: ajmay/truffle:5.0.9
@@ -161,12 +182,61 @@ services:
     logging:
       options:
         max-size: 10m
+    networks:
+      - nightfall_network
+
+  merkle-tree:
+    image:
+      docker.pkg.github.com/eyblockchain/timber/timber:v1.3.0
+    restart: on-failure
+    depends_on:
+      - mongo-merkle-tree
+      - ganache
+    volumes:
+      - ./config/merkle-tree:/app/config # mount point might be different if configuring from another application
+      - ./zkp/contracts/:/app/contracts:consistent # required if deploying contracts from within this service (if CONTRACT_LOCATION = 'default')
+      - ./zkp/build/:/app/build:consistent # required if CONTRACT_LOCATION = 'default'
+    ports:
+      - "9000:80"
+    environment:
+      BLOCKCHAIN_HOST: ws://ganache
+      BLOCKCHAIN_PORT: 8545
+      CONTRACT_LOCATION: 'default' # Where to find the contractInstances?
+      # Specify one of:
+      # - 'remote' (to GET them from a remote microservice); or
+      # - 'mongodb' (to get them from mongodb); or
+      # - 'default' (to get them from the app/build/ folder)
+      MONGO_HOST: mongodb://mongo-merkle-tree
+      MONGO_PORT: 27017
+      MONGO_NAME: merkle_tree
+      MONGO_USERNAME: admin
+      MONGO_PASSWORD: admin
+    networks:
+      - nightfall_network
+
+  # The database storing the merkle tree
+  mongo-merkle-tree:
+    image: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+      - MONGO_INITDB_DATABASE=merkle_tree
+    volumes:
+      - ./database/docker-entrypoint-initdb.d/02_setup_admin_user.js:/docker-entrypoint-initdb.d/02_setup_admin_user.js
+      - mongo-merkle-tree-volume:/data/db
+    networks:
+      - nightfall_network
 
 volumes:
-  mongo-volume: {}
-  zkp-code:
+  mongo-nightfall-volume: {}
+  mongo-merkle-tree-volume: {}
+  zkp-code-volume:
     driver: local
     driver_opts:
       type: none
       device: $PWD/zkp/code/
       o: bind
+
+networks:
+  nightfall_network:
+    name: nightfall_network

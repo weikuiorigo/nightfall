@@ -8,19 +8,10 @@ import { zkp } from '../rest';
 // eslint-disable-next-line import/prefer-default-export
 export async function getShieldAddresses(req, res, next) {
   try {
-    const coinShield = await zkp.getCoinShield(req.user);
-    const tokenShield = await zkp.getTokenShield(req.user);
+    const ftCommitmentShield = await zkp.getFTCommitmentShield(req.user);
+    const nftCommitmentShield = await zkp.getNFTCommitmentShield(req.user);
 
-    res.data = {
-      coinShield: {
-        contract_address: coinShield.shieldAddress,
-        contract_name: coinShield.name,
-      },
-      tokenShield: {
-        contract_address: tokenShield.shieldAddress,
-        contract_name: tokenShield.name,
-      },
-    };
+    res.data = { ftCommitmentShield, nftCommitmentShield };
     next();
   } catch (err) {
     next(err);

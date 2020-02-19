@@ -8,7 +8,7 @@ import { NgSelectComponent } from '@ng-select/ng-select';
  * Burn non-fungible token component, which is used for rendering the page of burn ERC-721 token.
  */
 @Component({
-  selector: 'nft-burn',
+  selector: 'app-nft-burn',
   templateUrl: './index.html',
   providers: [NftService],
   styleUrls: ['./index.css']
@@ -93,7 +93,7 @@ export default class NftBurnComponent implements OnInit , AfterContentInit {
   }
 
   /**
-   * Method to set new coin list in select box, on removing.
+   * Method will remove selected token
    * @param item {Object} Item to be removed.
    */
   onRemove(item) {
@@ -116,7 +116,7 @@ export default class NftBurnComponent implements OnInit , AfterContentInit {
       return;
     }
     term = term.toLowerCase();
-    const itemToSearch = item.uri.toString().toLowerCase();
+    const itemToSearch = item.token_uri.toString().toLowerCase();
     return itemToSearch.indexOf(term) > -1;
   }
 

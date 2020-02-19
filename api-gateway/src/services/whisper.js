@@ -4,19 +4,15 @@ const topicForCoinToken = '0xeca7945f';
 
 /**
  * This function will send whisper message
- * @param {Object} reqObj
+ * @param {String} senderShhIdentity
  * @param {Object} dataToSend
  */
-export async function whisperTransaction(req, dataToSend) {
-  // getIdentity from local db
-  const receiverName = req.body.receiver_name || req.body.payTo;
-
-  const user = await db.fetchUser(req.user);
+export async function sendWhisperMessage(senderShhIdentity, dataToSend) {
   // PKD to get the whisperPK using name "eg: bob"
-  const shhPkReceiver = await offchain.getWhisperPK(receiverName);
+  const shhPkReceiver = await offchain.getWhisperPK(dataToSend.receiver.name);
   const details = {
     message: dataToSend,
-    shhIdentity: user.shh_identity,
+    shhIdentity: senderShhIdentity,
     shhPkReceiver,
   };
   await offchain.sendMessage(details);

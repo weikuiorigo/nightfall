@@ -13,7 +13,6 @@ const crypto = require('crypto');
 const { Buffer } = require('safe-buffer');
 
 const inputsHashLength = 32;
-const merkleDepth = 33;
 
 // FUNCTIONS ON HEX VALUES
 
@@ -281,10 +280,11 @@ function binToDec(binStr) {
 
 /** Preserves the magnitude of a hex number in a finite field, even if the order of the field is smaller than hexStr. hexStr is converted to decimal (as fields work in decimal integer representation) and then split into chunks of size packingSize. Relies on a sensible packing size being provided (ZoKrates uses packingSize = 128).
  *if the result has fewer elements than it would need for compatibiity with the dsl, it's padded to the left with zero elements
+ * You can now send in a bigint rather than a hex string as we're moving to prefer BigInts
  */
 function hexToFieldPreserve(hexStr, packingSize, packets, silenceWarnings) {
   let bitsArr = [];
-  bitsArr = splitHexToBitsN(strip0x(hexStr).toString(), packingSize.toString());
+  bitsArr = splitHexToBitsN(strip0x(hexStr.toString(16)), packingSize.toString());
 
   let decArr = []; // decimal array
   decArr = bitsArr.map(item => binToDec(item.toString()));
@@ -408,11 +408,8 @@ function concatenate(a, b) {
 
 /**
 Utility function:
-hashes a concatenation of items but it does it by
-breaking the items up into 432 bit chunks, hashing those, plus any remainder
-and then repeating the process until you end up with a single hash.  That way
-we can generate a hash without needing to use more than a single sha round.  It's
-not the same value as we'd get using rounds but it's at least doable.
+hashes an item. It can cope with hex strings or bigints, returning the same type
+as it gets
 */
 function hash(item) {
   const preimage = strip0x(item);
@@ -460,15 +457,6 @@ function rndHex(bytes) {
       resolve(`0x${buf.toString('hex')}`);
     });
   });
-}
-
-function getLeafIndexFromZCount(zCount) {
-  // force it to be a number:
-  const zCountInt = parseInt(zCount, 10);
-  const MERKLE_DEPTH = parseInt(merkleDepth, 10);
-  const MERKLE_WIDTH = parseInt(2 ** (MERKLE_DEPTH - 1), 10);
-  const leafIndex = parseInt(MERKLE_WIDTH - 1 + zCountInt, 10);
-  return leafIndex;
 }
 
 /* flattenDeep converts a nested array into a flattened array. We use this to pass our proofs and vks into the verifier contract.
@@ -549,7 +537,6 @@ module.exports = {
   splitHexToBitsN,
   splitAndPadBitsN,
   leftPadBitsN,
-  getLeafIndexFromZCount,
   rndHex,
   flattenDeep,
   padHex,

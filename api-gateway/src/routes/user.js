@@ -44,17 +44,17 @@ router.post('/addContractInfo', addContractInfo);
  * @apiName  update AND/OR set shield contract
  * @apiGroup Sheild Contract
  *
- * @apiParam (Request body) {Object} tokenShield information to update (optional).
- * @apiParam (Request body) {Object} coinShield information to update (optional).
+ * @apiParam (Request body) {Object} nftCommitmentShield information to update (optional).
+ * @apiParam (Request body) {Object} ftCommitmentShield information to update (optional).
  *
  * @apiExample {js} Example usage:
  * const data = {
- *		"tokenShield": {
+ *		"nftCommitmentShield": {
  *			"contractAddress": "0x88B8d386BA803423482f325Be664607AE1Db6E1F",
  *			"contractName": "tokenShield1",
  *			"isSelected": true
  *		},
- *		"coinShield": {
+ *		"ftCommitmentShield": {
  *			"contractAddress": "0x3BBa2cdBb2376F07017421878540c424aAB61294",
  *			"contractName": "coinShield0",
  *			"isSelected": false
@@ -112,9 +112,8 @@ router.post('/deleteContractInfo', deleteContractInfo);
  *
  * @apiExample {js} Example usage:
  * const query = {
- *    name : "vishnu.ps"
+ *    name : "alice"
  * }
- *
  * $http.get(url, data)
  *   .success((res, status) => doSomethingHere())
  *   .error((err, status) => doSomethingHere());
@@ -156,10 +155,10 @@ router.route('/getAllRegisteredNames').get(getAllRegisteredNames);
  *      "name" : "a",
  *      "email" : "a",
  *      "address" : "0x47b5b425eb00bb002e77814e3fa0edcc35f02774",
- *      "secretkey" : "0x39c45c2c0117aa7473a112bebe6a5f263ece7cec3d95fc580d6c47",
- *      "publickey" : "0x8a187d107cfaa07492faec946ffde448fe166820865dd6a437b5c4",
- *      "coin_shield_contracts" : [ ],
- *      "token_shield_contracts" : [ ],
+ *      "secretKey" : "0x39c45c2c0117aa7473a112bebe6a5f263ece7cec3d95fc580d6c47",
+ *      "publicKey" : "0x8a187d107cfaa07492faec946ffde448fe166820865dd6a437b5c4",
+ *      "fTokenShields" : [ ],
+ *      "nfTokenShields" : [ ],
  *      "accounts" : [ ],
  *    }
  */

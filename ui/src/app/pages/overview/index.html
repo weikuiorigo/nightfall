@@ -33,7 +33,7 @@
           <div class="col-md-3">
             <div class="card">
               <div class="card-body">
-                <h3>{{ coinCount }}</h3>
+                <h3>{{ ftBalance }}</h3>
                 <p class="card-text">
                   ERC-20: {{ ftName || '' }} <span *ngIf="ftSymbol">({{ ftSymbol }})</span>
                 </p>
@@ -96,13 +96,16 @@
           </div>
 
           <div class="col-md-3">
-            <a class="btn btn-primary btn-list" [routerLink]="['/ft-commitment/mint']"
+            <a class="btn btn-primary btn-list ft-commitment" [routerLink]="['/ft-commitment/mint']"
               >Mint {{ ftName }} Commitment</a
             >
-            <a class="btn btn-primary btn-list" [routerLink]="['/ft-commitment/transfer']"
+            <a class="btn btn-primary btn-list ft-commitment" [routerLink]="['/ft-commitment/transfer']"
               >Transfer {{ ftName }} Commitment</a
             >
-            <a class="btn btn-primary btn-list" [routerLink]="['/ft-commitment/burn']"
+            <a class="btn btn-primary btn-list ft-commitment" [routerLink]="['/ft-commitment/batch-transfer']"
+              >Batch Transfer {{ ftName }} Commitment</a
+            >
+            <a class="btn btn-primary btn-list ft-commitment" [routerLink]="['/ft-commitment/burn']"
               >Burn {{ ftName }} Commitment</a
             >
           </div>
@@ -132,24 +135,24 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let transaction of publicTokenTransactions">
-                    <td>{{ transaction.type.toUpperCase() }}</td>
-                    <td [title]="transaction.token_id">
-                      {{ transaction.token_id.slice(0, 20) }}....
+                  <tr *ngFor="let transaction of nftTransactions">
+                    <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                    <td [title]="transaction.tokenId">
+                      {{ transaction.tokenId.slice(0, 20) }}....
                     </td>
-                    <td>{{ transaction.uri }}</td>
-                    <td>{{ transaction.created_at | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                    <td>{{ transaction.tokenUri }}</td>
+                    <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
                     <td>
                       {{
-                        transaction.type !== 'received' && transaction.receiver
-                          ? transaction.receiver
+                        transaction.transactionType !== 'transfer_incoming' && transaction.receiver
+                          ? transaction.receiver.name
                           : ''
                       }}
                     </td>
                     <td>
                       {{
-                        transaction.type === 'received' && transaction.sender
-                          ? transaction.sender
+                        transaction.transactionType === 'transfer_incoming' && transaction.sender
+                          ? transaction.sender.name
                           : ''
                       }}
                     </td>
@@ -183,18 +186,44 @@
                     <th>URI</th>
                     <th>Date</th>
                     <th>Send To</th>
+                    <th>Received From</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let transaction of tokenTransactions">
-                    <td>{{ transaction.type.toUpperCase() }}</td>
-                    <td [title]="transaction.token_id">
-                      {{ transaction.token_id.slice(0, 20) }}....
-                    </td>
-                    <td>{{ transaction.token_uri }}</td>
-                    <td>{{ transaction.created_at | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
-                    <td>{{ transaction.receiver || transaction.receiver_name ? (transaction.receiver || transaction.receiver_name) : '' }}</td>
-                  </tr>
+                  <ng-container *ngFor="let transaction of nftCommitmentTransactions">
+                    <tr *ngIf="transaction.transactionType === 'mint'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td [title]="transaction.outputCommitments[0].tokenId">{{ transaction.outputCommitments[0].tokenId.slice(0, 20) }}....</td>
+                      <td>{{ transaction.outputCommitments[0].tokenUri }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr *ngIf="transaction.transactionType === 'transfer_outgoing'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td [title]="transaction.outputCommitments[0].tokenId">{{ transaction.outputCommitments[0].tokenId.slice(0, 20) }}....</td>
+                      <td>{{ transaction.outputCommitments[0].tokenUri }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td>{{ transaction.receiver.name }}</td>
+                      <td></td>
+                    </tr>
+                    <tr *ngIf="transaction.transactionType === 'transfer_incoming'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td [title]="transaction.outputCommitments[0].tokenId">{{ transaction.outputCommitments[0].tokenId.slice(0, 20) }}....</td>
+                      <td>{{ transaction.outputCommitments[0].tokenUri }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td></td>
+                      <td>{{ transaction.sender.name }}</td>
+                    </tr>
+                    <tr *ngIf="transaction.transactionType === 'burn'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td [title]="transaction.inputCommitments[0].tokenId">{{ transaction.inputCommitments[0].tokenId.slice(0, 20) }}....</td>
+                      <td>{{ transaction.inputCommitments[0].tokenUri }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td>{{ transaction.receiver.name }}</td>
+                      <td></td>
+                    </tr>
+                  </ng-container>
                 </tbody>
               </table>
               <ngb-pagination
@@ -220,20 +249,25 @@
                 <thead>
                   <tr>
                     <th>Type</th>
-                    <th>Coin Value</th>
+                    <th>Amount</th>
                     <th>Date</th>
                     <th>Send To</th>
+                    <th>Received From</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let transaction of publicCoinTransactions">
-                    <td>{{ transaction.type.toUpperCase() }}</td>
-                    <td>{{ ftSymbol + ' ' + transaction.amount }}</td>
-                    <td>{{ transaction.created_at | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
-                    <td *ngIf="transaction.type === 'transferred'">
-                      {{ transaction.receiver ? transaction.receiver : '' }}
+                  <tr *ngFor="let transaction of ftTransactions">
+                    <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                    <td>{{ ftSymbol + ' ' + transaction.value }}</td>
+                    <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                    <td *ngIf="transaction.transactionType === 'transfer_outgoing'">
+                      {{ transaction.receiver ? transaction.receiver.name : '' }}
                     </td>
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
+                    <td *ngIf="transaction.transactionType !== 'transfer_outgoing'"></td>
+                    <td *ngIf="transaction.transactionType === 'transfer_incoming'">
+                      {{ transaction.sender ? transaction.sender.name : '' }}
+                    </td>
+                    <td *ngIf="transaction.transactionType !== 'transfer_incoming'"></td>
                   </tr>
                 </tbody>
               </table>
@@ -256,78 +290,95 @@
               </div>
             </ng-template>
             <ng-template ngbTabContent>
-              <table class="table  table-hover">
+              <table class="table  table-hover ft-commitment-table">
                 <thead>
                   <tr>
                     <th>Type</th>
-                    <th>Coin Value</th>
-                    <th>Coin Commitment</th>
-                    <th>Coin 1 Value</th>
-                    <th>Coin 1 Commitment</th>
-                    <th>Coin 2 Value</th>
-                    <th>Coin 2 Commitment</th>
+                    <th>Amount</th>
+                    <th>Commitment</th>
                     <th>Date</th>
                     <th>Send To</th>
+                    <th>Received From</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let transaction of coinTransactions">
-                    <td>{{ transaction.type.toUpperCase() }}</td>
-                    <td>
-                      {{ ftSymbol + ' ' + utilService.convertToNumber(transaction.coin_value) }}
-                    </td>
-                    <td [title]="transaction.coin_commitment">
-                      {{ transaction.coin_commitment.slice(0, 20) }}...
-                    </td>
+                  <ng-container *ngFor="let transaction of ftCommitmentTransactions; index as i">
 
-                    <td *ngIf="transaction.type === 'transferred'">
-                      {{
-                        transaction.used_coin_commitments.length
-                          ? ftSymbol +
-                            ' ' +
-                            utilService.convertToNumber(
-                              transaction.used_coin_commitments[0].coin_value
-                            )
-                          : ''
-                      }}
-                    </td>
-                    <td *ngIf="transaction.type === 'transferred'">
-                      {{
-                        transaction.used_coin_commitments.length
-                          ? transaction.used_coin_commitments[0].coin_commitment.slice(0, 20)
-                          : ''
-                      }}...
-                    </td>
-                    <td *ngIf="transaction.type === 'transferred'">
-                      {{
-                        transaction.used_coin_commitments.length
-                          ? ftSymbol +
-                            ' ' +
-                            utilService.convertToNumber(
-                              transaction.used_coin_commitments[1].coin_value
-                            )
-                          : ''
-                      }}
-                    </td>
-                    <td *ngIf="transaction.type === 'transferred'">
-                      {{
-                        transaction.used_coin_commitments.length
-                          ? transaction.used_coin_commitments[1].coin_commitment.slice(0, 20)
-                          : ''
-                      }}...
-                    </td>
+                    <tr *ngIf="transaction.transactionType === 'mint'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td>{{ ftSymbol + ' ' + utilService.convertToNumber(transaction.outputCommitments[0].value) }}</td>
+                      <td [title]="transaction.outputCommitments[0].commitment">{{ transaction.outputCommitments[0].commitment }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
 
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
+                     <tr *ngIf="transaction.transactionType === 'change'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td>{{ ftSymbol + ' ' + utilService.convertToNumber(transaction.outputCommitments[0].value) }}</td>
+                      <td [title]="transaction.outputCommitments[0].commitment">{{ transaction.outputCommitments[0].commitment }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
 
-                    <td>{{ transaction.created_at | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
-                    <td *ngIf="transaction.type === 'transferred' || transaction.type === 'burned'">
-                      {{ transaction.receiver ? transaction.receiver : '' }}
-                    </td>
-                    <td *ngIf="transaction.type !== 'transferred'"></td>
-                  </tr>
+                    <tr *ngIf="transaction.transactionType === 'burn'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td>{{ ftSymbol + ' ' + utilService.convertToNumber(transaction.inputCommitments[0].value) }}</td>
+                      <td [title]="transaction.inputCommitments[0].commitment">{{ transaction.inputCommitments[0].commitment }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td>{{transaction.receiver.name}}</td>
+                      <td></td>
+                    </tr>
+
+                    <tr *ngIf="transaction.transactionType === 'transfer_incoming'">
+                      <td>{{ utilService.replaceUnderscores(transaction.transactionType) }}</td>
+                      <td>{{ ftSymbol + ' ' + utilService.convertToNumber(transaction.outputCommitments[0].value) }}</td>
+                      <td [title]="transaction.outputCommitments[0].commitment">{{ transaction.outputCommitments[0].commitment }}</td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td></td>
+                      <td>{{transaction.sender.name}}</td>
+                    </tr>
+
+                    <tr data-toggle="collapse" [attr.data-target]="'#collapse-' + i" [attr.aria-controls] = "'collapse-' + i" *ngIf="transaction.transactionType === 'transfer_outgoing'">
+                      <td>
+                        {{ utilService.replaceUnderscores(transaction.transactionType) }}
+                      </td>
+                      <td>{{ transaction.receiver ? (ftSymbol + ' ' + utilService.convertToNumber(transaction.outputCommitments[0].value)) : (ftSymbol + ' ' + utilService.sumCommitmentValues(transaction.outputCommitments).value) }}</td>
+                      <td title="Click to see list of commitments"><span class="active fas collapsed" >View commitments</span></td>
+                      <td>{{ transaction.createdAt | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+                      <td>{{transaction.receiver && transaction.receiver.name}}</td>
+                      <td></td>
+                    </tr>
+                    <tr *ngIf="transaction.transactionType === 'transfer_outgoing'">
+                      <td class="collapse-row details-pane" colspan="6">
+                        <div [attr.id]="'collapse-' + i" class="collapse out">
+                          <table class="details-table table table-striped" *ngIf="transaction.inputCommitments.length > 1">
+                            <tr>
+                              <th>Used Amount</th>
+                              <th>Used Commitment</th>
+                            </tr>
+                            <tr *ngFor="let used_commitments of transaction.inputCommitments; index as i">
+                              <td>{{ ftSymbol +' ' +utilService.convertToNumber(used_commitments.value) }}</td>
+                              <td>{{used_commitments.commitment}}</td>
+                            </tr>                               
+                          </table>
+                          <table class="details-table table table-striped" *ngIf="transaction.outputCommitments.length > 1">
+                            <tr>
+                              <th>Transferred Amounts</th>
+                              <th>Transferred Commitments</th>
+                              <th>Receiver Names</th>
+                            </tr>
+                            <tr *ngFor="let commitments of transaction.outputCommitments; index as i">
+                              <td>{{ ftSymbol +' ' +utilService.convertToNumber(commitments.value) }}</td>
+                              <td>{{ commitments.commitment }}</td>
+                              <td>{{ commitments.owner.name }}</td>
+                            </tr>                               
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
                 </tbody>
               </table>
               <ngb-pagination
