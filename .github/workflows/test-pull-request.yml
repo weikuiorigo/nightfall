@@ -76,12 +76,15 @@ jobs:
         run: docker pull zokrates/zokrates:0.5.1
       - name: Increase swap memory
         run: |
+          swapon --show
+          free -h
           sudo usermod -a -G sudo runner
           sudo swapoff -a
-          sudo fallocate -l 14G /swapfile
+          sudo fallocate -l 12G /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
           swapon --show
+          free -h
           grep SwapTotal /proc/meminfo
       - name: Generate the keys and constraint files for Zero Knowledge Proofs
         run: |
