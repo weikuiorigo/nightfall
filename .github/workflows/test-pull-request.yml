@@ -78,7 +78,7 @@ jobs:
         run: |
           sudo usermod -a -G sudo runner
           sudo swapoff -a
-          sudo fallocate -l 12G /swapfile
+          sudo fallocate -l 14G /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
           swapon --show
