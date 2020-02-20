@@ -55,7 +55,7 @@ services:
       - ganache
     volumes:
       - ./offchain/src:/app/src:cached,ro
-      - ./offchain/build:/app/build:cached # Writeable for nodemon build
+      - ./offchain/build:/app/build:cached 
       - ./offchain/.babelrc:/app/.babelrc:cached,ro
       - ./offchain/__tests__:/app/__tests__:cached,ro
       - ./zkp-utils:/app/node_modules/zkp-utils:ro
@@ -78,12 +78,12 @@ services:
       - merkle-tree
     volumes:
       - ./zkp/src:/app/src:cached,ro
-      - ./zkp/build:/app/build:delegated # Writeable for nodemon build
-      - ./zkp/code:/app/code:cached # Writeable for ZoKrates build artifacts
+      - ./zkp/build:/app/build:delegated 
+      - ./zkp/code:/app/code:cached 
       - ./zkp/.babelrc:/app/.babelrc:cached,ro
       - ./zkp/__tests__:/app/__tests__:cached,ro
       - ./zkp/config:/app/config:cached,ro
-      - /var/run/docker.sock:/var/run/docker.sock # Writeable for Docker control communication
+      - /var/run/docker.sock:/var/run/docker.sock 
     environment:
       BLOCKCHAIN_HOST: ws://ganache
       BLOCKCHAIN_PORT: 8545
@@ -124,11 +124,11 @@ services:
     depends_on:
       - mongo-nightfall
     volumes:
-      - ./database/src:/app/src,ro
-      - ./database/.babelrc:/app/.babelrc,ro
-      - ./zkp-utils:/app/node_modules/zkp-utils,ro
-      - ./database/config:/app/config,ro
-      - ./database/setup-mongo-acl-for-new-users.js:/app/setup-mongo-acl-for-new-users.js:cached,ro
+      - ./database/src:/app/src
+      - ./database/.babelrc:/app/.babelrc
+      - ./zkp-utils:/app/node_modules/zkp-utils
+      - ./database/config:/app/config
+      - ./database/setup-mongo-acl-for-new-users.js:/app/setup-mongo-acl-for-new-users.js
     networks:
       - nightfall_network
 
@@ -139,7 +139,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=admin
       - MONGO_INITDB_DATABASE=nightfall
     volumes:
-      - ./database/docker-entrypoint-initdb.d/01_setup_admin_user.js:/docker-entrypoint-initdb.d/01_setup_admin_user.js,ro
+      - ./database/docker-entrypoint-initdb.d/01_setup_admin_user.js:/docker-entrypoint-initdb.d/01_setup_admin_user.js:cached
       - mongo-nightfall-volume:/data/db
     networks:
       - nightfall_network
@@ -154,7 +154,7 @@ services:
     volumes:
       - ./offchain/contracts:/truffle/contracts:cached,ro
       - ./offchain/migrations/:/truffle/migrations:cached,ro
-      - ./offchain/build/contracts/:/truffle/build/contracts:delegated # Writeable for Truffle compile
+      - ./offchain/build/contracts/:/truffle/build/contracts:delegated 
       - ./offchain/test/:/truffle/test:cached,ro
     depends_on:
       - ganache
@@ -174,7 +174,7 @@ services:
     volumes:
       - ./zkp/contracts/:/truffle/contracts:cached,ro
       - ./zkp/migrations/:/truffle/migrations:cached,ro
-      - ./zkp/build/contracts/:/truffle/build/contracts:delegated # Writeable for Truffle compile
+      - ./zkp/build/contracts/:/truffle/build/contracts:delegated 
       - ./zkp/test/:/truffle/test:cached,ro
       - ./zkp/src/:/truffle/src:cached,ro
     depends_on:
@@ -193,19 +193,15 @@ services:
       - mongo-merkle-tree
       - ganache
     volumes:
-      - ./config/merkle-tree:/app/config # mount point might be different if configuring from another application
-      - ./zkp/contracts/:/app/contracts:consistent # required if deploying contracts from within this service (if CONTRACT_LOCATION = 'default')
-      - ./zkp/build/:/app/build:consistent # required if CONTRACT_LOCATION = 'default'
+      - ./config/merkle-tree:/app/config 
+      - ./zkp/contracts/:/app/contracts:consistent 
+      - ./zkp/build/:/app/build:consistent
     ports:
       - "9000:80"
     environment:
       BLOCKCHAIN_HOST: ws://ganache
       BLOCKCHAIN_PORT: 8545
-      CONTRACT_LOCATION: 'default' # Where to find the contractInstances?
-      # Specify one of:
-      # - 'remote' (to GET them from a remote microservice); or
-      # - 'mongodb' (to get them from mongodb); or
-      # - 'default' (to get them from the app/build/ folder)
+      CONTRACT_LOCATION: 'default' 
       MONGO_HOST: mongodb://mongo-merkle-tree
       MONGO_PORT: 27017
       MONGO_NAME: merkle_tree
@@ -214,7 +210,6 @@ services:
     networks:
       - nightfall_network
 
-  # The database storing the merkle tree
   mongo-merkle-tree:
     image: mongo
     environment:
