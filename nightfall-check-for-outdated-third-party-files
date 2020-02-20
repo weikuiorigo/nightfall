@@ -36,6 +36,10 @@ contracts=(
 
 mkdir -p temp
 
+printf "${Yellow}\n\nThis script will not test Pairing_v1.sol.\n"
+printf "zkp/contracts/Pairing_v1.sol file contains two libraries BN256G2 and Pairing_v1\n"
+printf "Thus, Pairing_v1.sol outdated check neither work with \e[3m'file diff'\e[0m ${Yellow}nor with \e[3m'compiled file diff'.\e[0m\n\n"
+
 # function uninstall node module solc
 # and install with specfic version
 solidityVersion=''
@@ -136,6 +140,7 @@ getImportedFileName() {
 
   for import in $imports
   do
+    sed -i -E "s,.*$import,import \"\./$import,g" $path/$filename
     importFiles="$importFiles $(getImportedFileName $import $path)"
   done
 
