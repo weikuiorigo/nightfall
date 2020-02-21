@@ -86,6 +86,7 @@ jobs:
           sudo swapon /swapfile
           swapon --show
           free -h
+          df -h
           grep SwapTotal /proc/meminfo
       - name: Generate the keys and constraint files for Zero Knowledge Proofs
         run: |
@@ -95,6 +96,9 @@ jobs:
         run: |
           docker stop $(docker ps -a -q)
           docker rm $(docker ps -a -q)
+          grep SwapTotal /proc/meminfo
+          sudo swapoff /swapfile
+          grep SwapTotal /proc/meminfo
       - name: Run integration test
         run: ./nightfall-test
       - name: If integration test failed, upload logs files as artifacts
