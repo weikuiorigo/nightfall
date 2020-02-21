@@ -78,6 +78,7 @@ jobs:
         run: |
           swapon --show
           free -h
+          df -h
           sudo usermod -a -G sudo runner
           sudo swapoff -a
           sudo fallocate -l 12G /swapfile
