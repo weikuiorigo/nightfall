@@ -8,7 +8,7 @@ on:
 jobs:
   eslint-test:
     name: Run eslint check
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -30,7 +30,7 @@ jobs:
 
   zkp-unit-test:
     name: ZKP microservice unit test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@v1
         with:
@@ -49,11 +49,10 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           swapon --show
-          free -h
-          df -h
           grep SwapTotal /proc/meminfo
       - name: Generate the keys and constraint files for Zero Knowledge Proofs
         run: |
+          du -h -d 0
           chmod -R 777 zkp/code/
           npm run setupAll
       - name: Remove ZoKrates Containers
@@ -73,7 +72,7 @@ jobs:
 
   integration-test:
     name: Run integration test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@v1
         with:
@@ -85,6 +84,7 @@ jobs:
         run: docker pull zokrates/zokrates:0.5.1
       - name: Increase swap memory
         run: |
+          du -h -d 0
           swapon --show
           free -h
           df -h
@@ -94,8 +94,6 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           swapon --show
-          free -h
-          df -h
           grep SwapTotal /proc/meminfo
       - name: Generate the keys and constraint files for Zero Knowledge Proofs
         run: |
