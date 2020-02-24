@@ -74,10 +74,11 @@ jobs:
         run: docker pull zokrates/zokrates:0.5.1
       - name: free up some space
         run: |
+          pwd
           cd ..
           cd ..
           cd ..
-          sudo rm -dr runners
+          pwd
           du -h -d 0
           du -h -d 1
           cd work/nightfall/nightfall
