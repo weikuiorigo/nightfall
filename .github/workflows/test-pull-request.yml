@@ -16,7 +16,10 @@ jobs:
           node-version: '10.15.3'
       - run: npm ci
       - name: Run check for ESLint errors
-        run: npm run lint
+        run: |
+          npm run lint
+          free -h
+          df -h
 
   zkp-unit-test:
     name: ZKP microservice unit test
@@ -40,6 +43,8 @@ jobs:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           swapon --show
+          free -h
+          df -h
           grep SwapTotal /proc/meminfo
       - name: Generate the keys and constraint files for Zero Knowledge Proofs
         run: |
