@@ -36,15 +36,22 @@ jobs:
           cd ..
           pwd
           ls
+          rm -dr runners
+          ls
           du -h -d 0
           du -h -d 1
           echo "-----------"
-          cd runners
+          cd ..
           pwd
           ls
           sudo du -h -d 0
           sudo du -h -d 1
           echo "-----------"
+          cd ..
+          pwd
+          ls
+          sudo du -h -d 0
+          sudo du -h -d 1
 
   zkp-unit-test:
     name: ZKP microservice unit test
