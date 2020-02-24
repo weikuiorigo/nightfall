@@ -96,9 +96,6 @@ jobs:
         run: |
           docker stop $(docker ps -a -q)
           docker rm $(docker ps -a -q)
-          grep SwapTotal /proc/meminfo
-          sudo swapoff /swapfile
-          grep SwapTotal /proc/meminfo
       - name: Run integration test
         run: ./nightfall-test
       - name: If integration test failed, upload logs files as artifacts
