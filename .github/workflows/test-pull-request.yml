@@ -31,6 +31,10 @@ jobs:
           pwd
           ls
           du -h -d 0
+          cd ..
+          pwd
+          ls
+          du -h -d 0
 
   zkp-unit-test:
     name: ZKP microservice unit test
@@ -86,6 +90,7 @@ jobs:
         run: docker pull zokrates/zokrates:0.5.1
       - name: Increase swap memory
         run: |
+          du -h -d 0
           swapon --show
           sudo usermod -a -G sudo runner
           sudo swapoff -a
@@ -100,6 +105,7 @@ jobs:
           npm run setupAll
       - name: Remove ZoKrates Containers
         run: |
+          du -h -d 0
           docker stop $(docker ps -a -q)
           docker rm $(docker ps -a -q)
       - name: Run integration test

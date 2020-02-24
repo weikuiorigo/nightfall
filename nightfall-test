@@ -27,6 +27,7 @@ popd
 printf "${GREEN}*** Launching containerized ganache ***${NC}\n"
 docker-compose up -d ganache
 
+du -h -d 0
 free -h
 df -h
 
