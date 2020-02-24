@@ -19,6 +19,7 @@ jobs:
           free -h
           df -h
           npm ci
+          du -h -d 0
       - name: Run check for ESLint errors
         run: |
           npm run lint
