@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '10.15.3'
       - run: |
-          du -h -d 1
+          du -h -d 0
           free -h
           df -h
           npm ci
@@ -38,12 +38,11 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '10.15.3'
-      - name: login to github registry
-        run: docker login -u ${{ secrets.GITHUB_USERNAME }} -p ${{ secrets.GITHUB_PASSWORD }} docker.pkg.github.com
       - name: Pull docker image
         run: docker pull zokrates/zokrates:0.5.1
       - name: Increase swap memory
         run: |
+          du -h -d 0
           sudo usermod -a -G sudo runner
           sudo swapoff -a
           sudo fallocate -l 12G /swapfile
@@ -82,8 +81,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '10.15.3'
-      - name: login to github registry
-        run: docker login -u ${{ secrets.GITHUB_USERNAME }} -p ${{ secrets.GITHUB_PASSWORD }} docker.pkg.github.com
       - name: Pull docker image
         run: docker pull zokrates/zokrates:0.5.1
       - name: Increase swap memory
