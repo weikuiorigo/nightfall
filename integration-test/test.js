@@ -619,42 +619,44 @@ describe('****** Integration Test ******\n', function() {
      * Transfer ERC-20 Commitment.
      */
     it(`ERC-20 Commitment Batch transfer ERC-20 Commitment to users`, function(done) {
-      const {
-        value,
-        salt,
-        commitment,
-        commitmentIndex,
-        transferData,
-      } = erc20CommitmentBatchTransfer;
-      request
-        .post('/simpleFTCommitmentBatchTransfer')
-        .use(prefix(apiServerURL))
-        .send({
-          inputCommitments: [
-            {
-              value,
-              salt,
-              commitment,
-              commitmentIndex,
-            },
-          ],
-          outputCommitments: transferData,
-        })
-        .set('Accept', 'application/json')
-        .set('Authorization', alice.token)
-        .end((err, res) => {
-          if (err) return done(err);
-          expect(res.body.data.length).to.be.equal(2);
-          erc20CommitmentBatchTransfer.transferData[0].salt = res.body.data[0].salt; // set Salt from response to calculate and verify commitment.
+      if (config.REGULATORY_COMPLIANCE !== 'enabled') {
+        const {
+          value,
+          salt,
+          commitment,
+          commitmentIndex,
+          transferData,
+        } = erc20CommitmentBatchTransfer;
+        request
+          .post('/simpleFTCommitmentBatchTransfer')
+          .use(prefix(apiServerURL))
+          .send({
+            inputCommitments: [
+              {
+                value,
+                salt,
+                commitment,
+                commitmentIndex,
+              },
+            ],
+            outputCommitments: transferData,
+          })
+          .set('Accept', 'application/json')
+          .set('Authorization', alice.token)
+          .end((err, res) => {
+            if (err) return done(err);
+            expect(res.body.data.length).to.be.equal(2);
+            erc20CommitmentBatchTransfer.transferData[0].salt = res.body.data[0].salt; // set Salt from response to calculate and verify commitment.
 
-          expect(res.body.data[0].commitment).to.be.equal(
-            erc20CommitmentBatchTransfer.transferData[0].commitment,
-          );
-          expect(res.body.data[0].commitmentIndex).to.be.equal(
-            erc20CommitmentBatchTransfer.transferData[0].commitmentIndex,
-          );
-          return done();
-        });
+            expect(res.body.data[0].commitment).to.be.equal(
+              erc20CommitmentBatchTransfer.transferData[0].commitment,
+            );
+            expect(res.body.data[0].commitmentIndex).to.be.equal(
+              erc20CommitmentBatchTransfer.transferData[0].commitmentIndex,
+            );
+            return done();
+          });
+      } else this.skip();
     });
   });
 });
